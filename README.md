@@ -6,6 +6,13 @@ Welcome to the Book Dragon API! This is a RESTful backend service built with Go 
 
 - [Go](https://go.dev/) (1.20 or later recommended)
 
+### git hooks
+
+To ensure tests run automatically on commit, run the following command once to configure Git hooks:
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Starting the Project
 
 1. Ensure you have downloaded the required dependencies:

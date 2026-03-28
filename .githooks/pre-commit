@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# This hook runs before a commit.
+# If tests fail, the commit will be aborted.
+
+echo "Running Go tests..."
+if ! go test ./...; then
+    echo "Tests failed! Commit aborted. Please fix the tests and try again."
+    exit 1
+fi
+exit 0
