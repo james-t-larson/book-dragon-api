@@ -19,14 +19,17 @@ The Book Dragon API serves an interactive Swagger UI to explore and test the end
    [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html)
 
 3. **Explore the endpoints**:
-   - You will see a list of available API routes (e.g., `/login`, `/register`, `/auth/me`).
+   - You will see a list of available API routes (e.g., `/login`, `/register`, `/auth/me`, `/logout`).
    - Click on any endpoint to expand it and see the expected payload and responses.
    - You can click the **"Try it out"** button to execute a request directly from the browser.
 
-4. **Testing authenticated routes (like `/auth/me`)**:
+4. **Testing authenticated routes (like `/auth/me` and `/logout`)**:
    - First, use the `/login` endpoint to authenticate and copy the generated JWT token from the response.
    - Scroll up to the top of the Swagger UI page and click the **"Authorize"** button (with the lock icon).
    - Enter your token into the Value field and click **"Authorize"**. Usually, just the token string is sufficient (Swagger adds the `Bearer ` prefix for you).
    - Now you can successfully test routes that require authentication.
+
+5. **A Note on the `/logout` Endpoint**:
+   - The API uses stateless JWT authentication. Calling the `/logout` route returns a success response, but the actual "logout" process requires the frontend client to delete its locally stored JWT token.
 
 > **Note**: If you change any of the Swagger annotations in your code, you must re-run `swag init` to update these files before the changes will be reflected in the browser UI.

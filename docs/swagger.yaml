@@ -103,6 +103,27 @@ paths:
       summary: User login
       tags:
       - users
+  /logout:
+    post:
+      description: Logout a user (client-side token deletion required)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - users
   /register:
     post:
       consumes:

@@ -141,3 +141,21 @@ func (h *UserHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, user)
 }
+
+// @Summary User logout
+// @Description Logout a user (client-side token deletion required)
+// @Tags users
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]string
+// @Failure 401 {object} models.ErrorResponse
+// @Router /logout [post]
+func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	_, ok := r.Context().Value(auth.UserContextKey).(int64)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "successfully logged out"})
+}

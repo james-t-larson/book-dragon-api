@@ -49,6 +49,7 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Get("/auth/me", userHandler.Me)
+		r.Post("/logout", userHandler.Logout)
 	})
 
 	port := "8080"
