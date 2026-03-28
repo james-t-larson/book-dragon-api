@@ -30,6 +30,7 @@ func main() {
 	}
 
 	userHandler := &handlers.UserHandler{Store: st}
+	dragonHandler := &handlers.DragonHandler{Store: st}
 
 	r := chi.NewRouter()
 
@@ -50,6 +51,10 @@ func main() {
 		r.Use(auth.AuthMiddleware)
 		r.Get("/auth/me", userHandler.Me)
 		r.Post("/logout", userHandler.Logout)
+
+		// Dragon routes
+		r.Post("/dragon", dragonHandler.CreateDragon)
+		r.Get("/dragon", dragonHandler.GetDragon)
 	})
 
 	port := "8080"

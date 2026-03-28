@@ -1,25 +1,45 @@
 basePath: /
 definitions:
-  models.AuthResponse:
+  book-dragon_internal_models.AuthResponse:
     properties:
       token:
         type: string
       user:
-        $ref: '#/definitions/models.User'
+        $ref: '#/definitions/book-dragon_internal_models.User'
     type: object
-  models.ErrorResponse:
+  book-dragon_internal_models.CreateDragonRequest:
+    properties:
+      color:
+        type: string
+      name:
+        type: string
+    type: object
+  book-dragon_internal_models.Dragon:
+    properties:
+      color:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  book-dragon_internal_models.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  models.LoginRequest:
+  book-dragon_internal_models.LoginRequest:
     properties:
       email:
         type: string
       password:
         type: string
     type: object
-  models.RegisterRequest:
+  book-dragon_internal_models.RegisterRequest:
     properties:
       email:
         type: string
@@ -28,9 +48,15 @@ definitions:
       username:
         type: string
     type: object
-  models.User:
+  book-dragon_internal_models.User:
     properties:
       created_at:
+        type: string
+      dragon_color:
+        type: string
+      dragon_id:
+        type: integer
+      dragon_name:
         type: string
       email:
         type: string
@@ -55,20 +81,86 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.User'
+            $ref: '#/definitions/book-dragon_internal_models.User'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get current user
       tags:
       - users
+  /dragon:
+    get:
+      description: Get the authenticated user's dragon
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.Dragon'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user's dragon
+      tags:
+      - dragons
+    post:
+      consumes:
+      - application/json
+      description: Create a dragon for the authenticated user
+      parameters:
+      - description: Dragon Creation Info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/book-dragon_internal_models.CreateDragonRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.Dragon'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new dragon
+      tags:
+      - dragons
   /login:
     post:
       consumes:
@@ -80,26 +172,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.LoginRequest'
+          $ref: '#/definitions/book-dragon_internal_models.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.AuthResponse'
+            $ref: '#/definitions/book-dragon_internal_models.AuthResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
       summary: User login
       tags:
       - users
@@ -118,7 +210,7 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: User logout
@@ -135,26 +227,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.RegisterRequest'
+          $ref: '#/definitions/book-dragon_internal_models.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.User'
+            $ref: '#/definitions/book-dragon_internal_models.User'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ErrorResponse'
+            $ref: '#/definitions/book-dragon_internal_models.ErrorResponse'
       summary: Register a new user
       tags:
       - users

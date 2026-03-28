@@ -31,6 +31,12 @@ func TestMe(t *testing.T) {
 					Password: hashedPassword,
 				}
 				_ = st.CreateUser(u)
+				d := &models.Dragon{
+					Name:   "Toothless",
+					Color:  "Black",
+					UserID: u.ID,
+				}
+				_ = st.CreateDragon(d)
 				return u
 			},
 			setContext:     true,
@@ -45,6 +51,13 @@ func TestMe(t *testing.T) {
 				}
 				if resp.ID != u.ID {
 					t.Errorf("expected ID %d, got %d", u.ID, resp.ID)
+				}
+				if resp.DragonName == nil || *resp.DragonName != "Toothless" {
+					if resp.DragonName == nil {
+						t.Errorf("expected dragon Toothless, got nil")
+					} else {
+						t.Errorf("expected dragon Toothless, got %v", *resp.DragonName)
+					}
 				}
 			},
 		},

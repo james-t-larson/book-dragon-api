@@ -3,11 +3,27 @@ package models
 import "time"
 
 type User struct {
+	ID          int64     `json:"id"`
+	Username    string    `json:"username"`
+	Email       string    `json:"email"`
+	Password    string    `json:"-"` // Omit password hash in responses
+	CreatedAt   time.Time `json:"created_at"`
+	DragonID    *int64    `json:"dragon_id,omitempty"`
+	DragonName  *string   `json:"dragon_name,omitempty"`
+	DragonColor *string   `json:"dragon_color,omitempty"`
+}
+
+type Dragon struct {
 	ID        int64     `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	Password  string    `json:"-"` // Omit password hash in responses
+	Name      string    `json:"name"`
+	Color     string    `json:"color"`
+	UserID    int64     `json:"user_id"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type CreateDragonRequest struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
 }
 
 type RegisterRequest struct {

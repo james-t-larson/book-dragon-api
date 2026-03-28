@@ -31,6 +31,12 @@ func TestLogin(t *testing.T) {
 					Password: hashedPassword,
 				}
 				_ = st.CreateUser(u)
+				d := &models.Dragon{
+					Name:   "Toothless",
+					Color:  "Black",
+					UserID: u.ID,
+				}
+				_ = st.CreateDragon(d)
 			},
 			payload: models.LoginRequest{
 				Email:    "test@example.com",
@@ -47,6 +53,13 @@ func TestLogin(t *testing.T) {
 				}
 				if resp.User.Email != "test@example.com" {
 					t.Errorf("expected email test@example.com, got %s", resp.User.Email)
+				}
+				if resp.User.DragonName == nil || *resp.User.DragonName != "Toothless" {
+					if resp.User.DragonName == nil {
+						t.Errorf("expected dragon Toothless, got nil")
+					} else {
+						t.Errorf("expected dragon Toothless, got %v", *resp.User.DragonName)
+					}
 				}
 			},
 		},

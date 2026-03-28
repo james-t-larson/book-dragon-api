@@ -34,19 +34,123 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/book-dragon_internal_models.User"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dragon": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the authenticated user's dragon",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dragons"
+                ],
+                "summary": "Get user's dragon",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.Dragon"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a dragon for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dragons"
+                ],
+                "summary": "Create a new dragon",
+                "parameters": [
+                    {
+                        "description": "Dragon Creation Info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.CreateDragonRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.Dragon"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -72,7 +176,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.LoginRequest"
+                            "$ref": "#/definitions/book-dragon_internal_models.LoginRequest"
                         }
                     }
                 ],
@@ -80,25 +184,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.AuthResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.AuthResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -132,7 +236,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -158,7 +262,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.RegisterRequest"
+                            "$ref": "#/definitions/book-dragon_internal_models.RegisterRequest"
                         }
                     }
                 ],
@@ -166,25 +270,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/book-dragon_internal_models.User"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
+                            "$ref": "#/definitions/book-dragon_internal_models.ErrorResponse"
                         }
                     }
                 }
@@ -192,18 +296,49 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.AuthResponse": {
+        "book-dragon_internal_models.AuthResponse": {
             "type": "object",
             "properties": {
                 "token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/models.User"
+                    "$ref": "#/definitions/book-dragon_internal_models.User"
                 }
             }
         },
-        "models.ErrorResponse": {
+        "book-dragon_internal_models.CreateDragonRequest": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "book-dragon_internal_models.Dragon": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "book-dragon_internal_models.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -211,7 +346,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LoginRequest": {
+        "book-dragon_internal_models.LoginRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -222,7 +357,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.RegisterRequest": {
+        "book-dragon_internal_models.RegisterRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -236,10 +371,19 @@ const docTemplate = `{
                 }
             }
         },
-        "models.User": {
+        "book-dragon_internal_models.User": {
             "type": "object",
             "properties": {
                 "created_at": {
+                    "type": "string"
+                },
+                "dragon_color": {
+                    "type": "string"
+                },
+                "dragon_id": {
+                    "type": "integer"
+                },
+                "dragon_name": {
                     "type": "string"
                 },
                 "email": {
