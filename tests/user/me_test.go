@@ -37,6 +37,8 @@ func TestMe(t *testing.T) {
 					UserID: u.ID,
 				}
 				_ = st.CreateDragon(d)
+				b, _ := st.GetOrCreateBook("The Hobbit", "J.R.R. Tolkien", "Fantasy", 310)
+				_ = st.IncrementUserBook(u.ID, b.ID)
 				return u
 			},
 			setContext:     true,
@@ -58,6 +60,9 @@ func TestMe(t *testing.T) {
 					} else {
 						t.Errorf("expected dragon Toothless, got %v", *resp.DragonName)
 					}
+				}
+				if len(resp.Books) != 1 || resp.Books[0].Title != "The Hobbit" || resp.Books[0].ReadCount != 1 {
+					t.Errorf("expected 1 book 'The Hobbit' with read count 1, got %v", resp.Books)
 				}
 			},
 		},

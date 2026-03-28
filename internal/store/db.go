@@ -102,6 +102,13 @@ func (s *Store) GetUserByEmail(email string) (*models.User, error) {
 		return nil, err
 	}
 
+	books, err := s.GetUserBookSummaries(u.ID)
+	if err == nil && len(books) > 0 {
+		u.Books = books
+	} else {
+		u.Books = []models.UserBookSummary{}
+	}
+
 	return &u, nil
 }
 
@@ -122,6 +129,13 @@ func (s *Store) GetUserByID(id int64) (*models.User, error) {
 			return nil, ErrUserNotFound
 		}
 		return nil, err
+	}
+
+	books, err := s.GetUserBookSummaries(u.ID)
+	if err == nil && len(books) > 0 {
+		u.Books = books
+	} else {
+		u.Books = []models.UserBookSummary{}
 	}
 
 	return &u, nil

@@ -31,6 +31,7 @@ func main() {
 
 	userHandler := &handlers.UserHandler{Store: st}
 	dragonHandler := &handlers.DragonHandler{Store: st}
+	bookHandler := &handlers.BookHandler{Store: st}
 
 	r := chi.NewRouter()
 
@@ -55,6 +56,10 @@ func main() {
 		// Dragon routes
 		r.Post("/dragon", dragonHandler.CreateDragon)
 		r.Get("/dragon", dragonHandler.GetDragon)
+
+		// Book routes
+		r.Post("/books", bookHandler.PostBook)
+		r.Get("/books", bookHandler.GetBooks)
 	})
 
 	port := "8080"

@@ -8,9 +8,10 @@ type User struct {
 	Email       string    `json:"email"`
 	Password    string    `json:"-"` // Omit password hash in responses
 	CreatedAt   time.Time `json:"created_at"`
-	DragonID    *int64    `json:"dragon_id,omitempty"`
-	DragonName  *string   `json:"dragon_name,omitempty"`
-	DragonColor *string   `json:"dragon_color,omitempty"`
+	DragonID    *int64            `json:"dragon_id,omitempty"`
+	DragonName  *string           `json:"dragon_name,omitempty"`
+	DragonColor *string           `json:"dragon_color,omitempty"`
+	Books       []UserBookSummary `json:"books,omitempty"`
 }
 
 type Dragon struct {

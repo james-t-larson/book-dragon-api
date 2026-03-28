@@ -37,6 +37,8 @@ func TestLogin(t *testing.T) {
 					UserID: u.ID,
 				}
 				_ = st.CreateDragon(d)
+				b, _ := st.GetOrCreateBook("The Hobbit", "J.R.R. Tolkien", "Fantasy", 310)
+				_ = st.IncrementUserBook(u.ID, b.ID)
 			},
 			payload: models.LoginRequest{
 				Email:    "test@example.com",
@@ -60,6 +62,9 @@ func TestLogin(t *testing.T) {
 					} else {
 						t.Errorf("expected dragon Toothless, got %v", *resp.User.DragonName)
 					}
+				}
+				if len(resp.User.Books) != 1 || resp.User.Books[0].Title != "The Hobbit" || resp.User.Books[0].ReadCount != 1 {
+					t.Errorf("expected 1 book 'The Hobbit' with read count 1, got %v", resp.User.Books)
 				}
 			},
 		},
