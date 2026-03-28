@@ -1,4 +1,4 @@
-package tests
+package usertest
 
 import (
 	"bytes"
@@ -11,15 +11,6 @@ import (
 	"book-dragon/internal/models"
 	"book-dragon/internal/store"
 )
-
-func setupTestStore(t *testing.T) *store.Store {
-	// :memory: creates a new in-memory SQLite database
-	st, err := store.New(":memory:")
-	if err != nil {
-		t.Fatalf("failed to create test store: %v", err)
-	}
-	return st
-}
 
 func TestRegister(t *testing.T) {
 	tests := []struct {
