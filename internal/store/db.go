@@ -85,7 +85,7 @@ func (s *Store) CreateUser(u *models.User) error {
 
 func (s *Store) GetUserByEmail(email string) (*models.User, error) {
 	query := `
-		SELECT u.id, u.username, u.email, u.password, u.created_at,
+		SELECT u.id, u.username, u.email, u.password, u.created_at, u.coins,
 		       d.id, d.name, d.color
 		FROM users u
 		LEFT JOIN dragons d ON u.id = d.user_id
@@ -94,7 +94,7 @@ func (s *Store) GetUserByEmail(email string) (*models.User, error) {
 	row := s.db.QueryRow(query, email)
 
 	var u models.User
-	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.CreatedAt, &u.DragonID, &u.DragonName, &u.DragonColor)
+	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.CreatedAt, &u.Coins, &u.DragonID, &u.DragonName, &u.DragonColor)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
@@ -114,7 +114,7 @@ func (s *Store) GetUserByEmail(email string) (*models.User, error) {
 
 func (s *Store) GetUserByID(id int64) (*models.User, error) {
 	query := `
-		SELECT u.id, u.username, u.email, u.password, u.created_at,
+		SELECT u.id, u.username, u.email, u.password, u.created_at, u.coins,
 		       d.id, d.name, d.color
 		FROM users u
 		LEFT JOIN dragons d ON u.id = d.user_id
@@ -123,7 +123,7 @@ func (s *Store) GetUserByID(id int64) (*models.User, error) {
 	row := s.db.QueryRow(query, id)
 
 	var u models.User
-	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.CreatedAt, &u.DragonID, &u.DragonName, &u.DragonColor)
+	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.CreatedAt, &u.Coins, &u.DragonID, &u.DragonName, &u.DragonColor)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
@@ -175,3 +175,19 @@ func (s *Store) GetDragonByUserID(userID int64) (*models.Dragon, error) {
 
 	return &d, nil
 }
+
+func (s *Store) AddCoinsToUser(userID int64, coinsToAdd int64) (int64, error) {
+	query := `UPDATE users SET coins = coins + ? WHERE id = ?`
+	_, err := s.db.Exec(query, coinsToAdd, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	var totalCoins int64
+	err = s.db.QueryRow(`SELECT coins FROM users WHERE id = ?`, userID).Scan(&totalCoins)
+	if err != nil {
+		return 0, err
+	}
+	return totalCoins, nil
+}
+

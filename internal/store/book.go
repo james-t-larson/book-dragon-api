@@ -76,7 +76,7 @@ func (s *Store) IncrementUserBook(userID, bookID int64) error {
 
 func (s *Store) GetUserBooks(userID int64) ([]models.UserBookResponse, error) {
 	query := `
-		SELECT b.title, b.author, b.genre, b.total_pages, ub.read_count, ub.current_page
+		SELECT b.id, b.title, b.author, b.genre, b.total_pages, ub.read_count, ub.current_page
 		FROM books b
 		JOIN user_books ub ON b.id = ub.book_id
 		WHERE ub.user_id = ?
@@ -90,7 +90,7 @@ func (s *Store) GetUserBooks(userID int64) ([]models.UserBookResponse, error) {
 	var books []models.UserBookResponse
 	for rows.Next() {
 		var b models.UserBookResponse
-		if err := rows.Scan(&b.Title, &b.Author, &b.Genre, &b.TotalPages, &b.ReadCount, &b.CurrentPage); err != nil {
+		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Genre, &b.TotalPages, &b.ReadCount, &b.CurrentPage); err != nil {
 			return nil, err
 		}
 		books = append(books, b)
@@ -101,7 +101,7 @@ func (s *Store) GetUserBooks(userID int64) ([]models.UserBookResponse, error) {
 
 func (s *Store) GetUserBookSummaries(userID int64) ([]models.UserBookSummary, error) {
 	query := `
-		SELECT b.title, ub.read_count
+		SELECT b.id, b.title, ub.read_count
 		FROM books b
 		JOIN user_books ub ON b.id = ub.book_id
 		WHERE ub.user_id = ?
@@ -115,7 +115,7 @@ func (s *Store) GetUserBookSummaries(userID int64) ([]models.UserBookSummary, er
 	var books []models.UserBookSummary
 	for rows.Next() {
 		var b models.UserBookSummary
-		if err := rows.Scan(&b.Title, &b.ReadCount); err != nil {
+		if err := rows.Scan(&b.ID, &b.Title, &b.ReadCount); err != nil {
 			return nil, err
 		}
 		books = append(books, b)
@@ -123,3 +123,23 @@ func (s *Store) GetUserBookSummaries(userID int64) ([]models.UserBookSummary, er
 
 	return books, nil
 }
+
+func (s *Store) HasUserBook(userID, bookID int64) (bool, error) {
+	query := `SELECT 1 FROM user_books WHERE user_id = ? AND book_id = ?`
+	var exists int
+	err := s.db.QueryRow(query, userID, bookID).Scan(&exists)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *Store) AddPagesRead(userID, bookID int64, pagesRead int) error {
+	query := `UPDATE user_books SET current_page = current_page + ? WHERE user_id = ? AND book_id = ?`
+	_, err := s.db.Exec(query, pagesRead, userID, bookID)
+	return err
+}
+

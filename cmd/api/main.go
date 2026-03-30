@@ -52,6 +52,7 @@ func main() {
 		r.Use(auth.AuthMiddleware)
 		r.Get("/auth/me", userHandler.Me)
 		r.Post("/logout", userHandler.Logout)
+		r.Post("/focus_timer_complete", userHandler.FocusTimerComplete)
 
 		// Dragon routes
 		r.Post("/dragon", dragonHandler.CreateDragon)

@@ -58,6 +58,22 @@ definitions:
       error:
         type: string
     type: object
+  models.FocusTimerRequest:
+    properties:
+      book_id:
+        type: integer
+      minutes:
+        type: integer
+      title:
+        type: string
+    type: object
+  models.FocusTimerResponse:
+    properties:
+      coins_earned:
+        type: integer
+      total_coins:
+        type: integer
+    type: object
   models.LoginRequest:
     properties:
       email:
@@ -80,6 +96,8 @@ definitions:
         items:
           $ref: '#/definitions/models.UserBookSummary'
         type: array
+      coins:
+        type: integer
       created_at:
         type: string
       dragon_color:
@@ -274,6 +292,46 @@ paths:
       summary: Create a new dragon
       tags:
       - dragons
+  /focus_timer_complete:
+    post:
+      consumes:
+      - application/json
+      description: Add coins based on minutes read
+      parameters:
+      - description: Focus Timer Info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.FocusTimerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.FocusTimerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Complete a focus timer session
+      tags:
+      - users
   /login:
     post:
       consumes:

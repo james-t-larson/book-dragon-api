@@ -159,3 +159,59 @@ func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "successfully logged out"})
 }
+
+// @Summary Complete a focus timer session
+// @Description Add coins based on minutes read
+// @Tags users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body models.FocusTimerRequest true "Focus Timer Info"
+// @Success 200 {object} models.FocusTimerResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /focus_timer_complete [post]
+func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(auth.UserContextKey).(int64)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req models.FocusTimerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+
+	if req.Minutes <= 0 || req.BookID <= 0 {
+		writeError(w, http.StatusBadRequest, "minutes and book_id are required and must be strictly positive")
+		return
+	}
+
+	hasBook, err := h.Store.HasUserBook(userID, req.BookID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to verify book ownership")
+		return
+	}
+	if !hasBook {
+		writeError(w, http.StatusNotFound, "book not found in user's library")
+		return
+	}
+
+	coinsEarned := int64((req.Minutes / 5) * 3)
+
+	totalCoins, err := h.Store.AddCoinsToUser(userID, coinsEarned)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update coins")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, models.FocusTimerResponse{
+		CoinsEarned: coinsEarned,
+		TotalCoins:  totalCoins,
+	})
+}
+

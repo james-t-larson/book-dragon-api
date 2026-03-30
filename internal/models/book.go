@@ -28,6 +28,7 @@ type CreateBookRequest struct {
 }
 
 type UserBookResponse struct {
+	ID          int64  `json:"id"`
 	Title       string `json:"title"`
 	Author      string `json:"author"`
 	Genre       string `json:"genre"`
@@ -37,6 +38,7 @@ type UserBookResponse struct {
 }
 
 type UserBookSummary struct {
+	ID        int64  `json:"id"`
 	Title     string `json:"title"`
 	ReadCount int    `json:"read_count"`
 }

@@ -11,6 +11,7 @@ type User struct {
 	DragonID    *int64            `json:"dragon_id,omitempty"`
 	DragonName  *string           `json:"dragon_name,omitempty"`
 	DragonColor *string           `json:"dragon_color,omitempty"`
+	Coins       int64             `json:"coins"`
 	Books       []UserBookSummary `json:"books,omitempty"`
 }
 
@@ -45,4 +46,15 @@ type AuthResponse struct {
 
 type ErrorResponse struct {
 	Error string `json:"error"`
+}
+
+type FocusTimerRequest struct {
+	Minutes   int   `json:"minutes"`
+	BookID    int64 `json:"book_id"`
+	PagesRead int   `json:"pages_read"`
+}
+
+type FocusTimerResponse struct {
+	CoinsEarned int64 `json:"coins_earned"`
+	TotalCoins  int64 `json:"total_coins"`
 }
