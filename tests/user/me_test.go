@@ -64,6 +64,9 @@ func TestMe(t *testing.T) {
 				if len(resp.Books) != 1 || resp.Books[0].Title != "The Hobbit" || resp.Books[0].ReadCount != 1 {
 					t.Errorf("expected 1 book 'The Hobbit' with read count 1, got %v", resp.Books)
 				}
+				if resp.Books[0].ID == 0 {
+					t.Errorf("expected book ID to be non-zero in /me response")
+				}
 			},
 		},
 		{

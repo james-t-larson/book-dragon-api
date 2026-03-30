@@ -165,6 +165,9 @@ func TestGetBooks(t *testing.T) {
 				if books[0].Title != "Dune" || books[0].ReadCount != 2 {
 					t.Errorf("expected book 'Dune' with read count 2, got title %s and count %d", books[0].Title, books[0].ReadCount)
 				}
+				if books[0].ID == 0 {
+					t.Errorf("expected book ID to be non-zero in GET /books response")
+				}
 			},
 		},
 		{

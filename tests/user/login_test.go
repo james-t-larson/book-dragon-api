@@ -66,6 +66,9 @@ func TestLogin(t *testing.T) {
 				if len(resp.User.Books) != 1 || resp.User.Books[0].Title != "The Hobbit" || resp.User.Books[0].ReadCount != 1 {
 					t.Errorf("expected 1 book 'The Hobbit' with read count 1, got %v", resp.User.Books)
 				}
+				if resp.User.Books[0].ID == 0 {
+					t.Errorf("expected book ID to be non-zero in /login response")
+				}
 			},
 		},
 	}

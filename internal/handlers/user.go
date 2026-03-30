@@ -191,6 +191,16 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if req.PagesRead == nil {
+		writeError(w, http.StatusBadRequest, "pages_read is required")
+		return
+	}
+
+	if *req.PagesRead < 0 {
+		writeError(w, http.StatusBadRequest, "pages_read must be zero or positive")
+		return
+	}
+
 	hasBook, err := h.Store.HasUserBook(userID, req.BookID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to verify book ownership")
@@ -207,6 +217,13 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update coins")
 		return
+	}
+
+	if *req.PagesRead > 0 {
+		if err := h.Store.AddPagesRead(userID, req.BookID, *req.PagesRead); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to update reading progress")
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, models.FocusTimerResponse{

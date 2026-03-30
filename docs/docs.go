@@ -553,8 +553,8 @@ const docTemplate = `{
                 "minutes": {
                     "type": "integer"
                 },
-                "title": {
-                    "type": "string"
+                "pages_read": {
+                    "type": "integer"
                 }
             }
         },
@@ -641,6 +641,9 @@ const docTemplate = `{
                 "genre": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "read_count": {
                     "type": "integer"
                 },
@@ -655,6 +658,9 @@ const docTemplate = `{
         "models.UserBookSummary": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "integer"
+                },
                 "read_count": {
                     "type": "integer"
                 },

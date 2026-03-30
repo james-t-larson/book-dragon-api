@@ -547,8 +547,8 @@
                 "minutes": {
                     "type": "integer"
                 },
-                "title": {
-                    "type": "string"
+                "pages_read": {
+                    "type": "integer"
                 }
             }
         },
@@ -635,6 +635,9 @@
                 "genre": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "read_count": {
                     "type": "integer"
                 },
@@ -649,6 +652,9 @@
         "models.UserBookSummary": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "integer"
+                },
                 "read_count": {
                     "type": "integer"
                 },

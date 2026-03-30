@@ -51,7 +51,7 @@ type ErrorResponse struct {
 type FocusTimerRequest struct {
 	Minutes   int   `json:"minutes"`
 	BookID    int64 `json:"book_id"`
-	PagesRead int   `json:"pages_read"`
+	PagesRead *int  `json:"pages_read"`
 }
 
 type FocusTimerResponse struct {
