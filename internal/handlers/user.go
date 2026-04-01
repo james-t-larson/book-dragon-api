@@ -26,12 +26,12 @@ func writeError(w http.ResponseWriter, status int, message string) {
 }
 
 // @Summary Register a new user
-// @Description Create a new user account
+// @Description Create a new user account and log the user in
 // @Tags users
 // @Accept json
 // @Produce json
 // @Param body body models.RegisterRequest true "User Registration Info"
-// @Success 201 {object} models.User
+// @Success 201 {object} models.AuthResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 409 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
@@ -69,7 +69,16 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, user)
+	token, err := auth.GenerateToken(user.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to generate token")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, models.AuthResponse{
+		Token: token,
+		User:  *user,
+	})
 }
 
 // @Summary User login

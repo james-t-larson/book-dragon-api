@@ -108,6 +108,21 @@ func TestRegister(t *testing.T) {
 			if w.Result().StatusCode != tc.expectedStatus {
 				t.Errorf("expected status %d, got %d", tc.expectedStatus, w.Result().StatusCode)
 			}
+
+			if tc.expectedStatus == http.StatusCreated {
+				var resp models.AuthResponse
+				if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+					t.Fatalf("failed to decode response: %v", err)
+				}
+				if resp.Token == "" {
+					t.Error("expected token in response, got empty string")
+				}
+				if regReq, ok := tc.payload.(models.RegisterRequest); ok {
+					if resp.User.Username != regReq.Username {
+						t.Errorf("expected username %s, got %s", regReq.Username, resp.User.Username)
+					}
+				}
+			}
 		})
 	}
 }
