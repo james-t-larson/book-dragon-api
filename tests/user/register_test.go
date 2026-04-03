@@ -18,6 +18,7 @@ func TestRegister(t *testing.T) {
 		setup          func(st *store.Store)
 		payload        interface{}
 		expectedStatus int
+		checkBody      func(t *testing.T, body []byte)
 	}{
 		{
 			name: "Valid Registration",
@@ -28,6 +29,21 @@ func TestRegister(t *testing.T) {
 				Password: "password123",
 			},
 			expectedStatus: http.StatusCreated,
+			checkBody: func(t *testing.T, body []byte) {
+				var resp models.AuthResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.Token == "" {
+					t.Error("expected token in response, got empty string")
+				}
+				if resp.User.Username != "testuser" {
+					t.Errorf("expected username testuser, got %s", resp.User.Username)
+				}
+				if resp.User.Email != "test@example.com" {
+					t.Errorf("expected email test@example.com, got %s", resp.User.Email)
+				}
+			},
 		},
 		{
 			name: "Duplicate Email",
@@ -109,19 +125,8 @@ func TestRegister(t *testing.T) {
 				t.Errorf("expected status %d, got %d", tc.expectedStatus, w.Result().StatusCode)
 			}
 
-			if tc.expectedStatus == http.StatusCreated {
-				var resp models.AuthResponse
-				if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-					t.Fatalf("failed to decode response: %v", err)
-				}
-				if resp.Token == "" {
-					t.Error("expected token in response, got empty string")
-				}
-				if regReq, ok := tc.payload.(models.RegisterRequest); ok {
-					if resp.User.Username != regReq.Username {
-						t.Errorf("expected username %s, got %s", regReq.Username, resp.User.Username)
-					}
-				}
+			if tc.checkBody != nil {
+				tc.checkBody(t, w.Body.Bytes())
 			}
 		})
 	}

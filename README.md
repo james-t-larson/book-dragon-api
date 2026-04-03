@@ -41,7 +41,8 @@ curl -X POST http://localhost:8080/register \
   }'
 ```
 
-If successful, you should receive a `201 Created` response containing your new user details (minus the password!).
+If successful, you should receive a `201 Created` response containing your new user details AND an authentication token you can use to log in to other endpoints!
+
 
 ### Exploring the Interactive API Documentation
 

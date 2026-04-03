@@ -402,7 +402,7 @@ const docTemplate = `{
         },
         "/register": {
             "post": {
-                "description": "Create a new user account",
+                "description": "Create a new user account and log the user in",
                 "consumes": [
                     "application/json"
                 ],
@@ -428,7 +428,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.AuthResponse"
                         }
                     },
                     "400": {
