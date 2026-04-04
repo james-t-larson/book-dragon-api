@@ -30,15 +30,15 @@ func TestMe(t *testing.T) {
 					Email:    "test@example.com",
 					Password: hashedPassword,
 				}
-				_ = st.CreateUser(u)
+				_ = st.CreateUser(context.Background(), u)
 				d := &models.Dragon{
 					Name:   "Toothless",
 					Color:  "Black",
 					UserID: u.ID,
 				}
-				_ = st.CreateDragon(d)
-				b, _ := st.GetOrCreateBook("The Hobbit", "J.R.R. Tolkien", "Fantasy", 310)
-				_ = st.IncrementUserBook(u.ID, b.ID)
+				_ = st.CreateDragon(context.Background(), d)
+				b, _ := st.GetOrCreateBook(context.Background(), "The Hobbit", "J.R.R. Tolkien", "Fantasy", 310)
+				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
 				return u
 			},
 			setContext:     true,

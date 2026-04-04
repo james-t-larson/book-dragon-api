@@ -22,7 +22,7 @@ func TestCreateDragon(t *testing.T) {
 		Email:    "dragon@example.com",
 		Password: "password123",
 	}
-	_ = st.CreateUser(u)
+	_ = st.CreateUser(context.Background(), u)
 
 	tests := []struct {
 		name           string
@@ -88,21 +88,21 @@ func TestGetDragon(t *testing.T) {
 		Email:    "getter@example.com",
 		Password: "password123",
 	}
-	_ = st.CreateUser(u)
+	_ = st.CreateUser(context.Background(), u)
 
 	u2 := &models.User{
 		Username: "nodragon",
 		Email:    "nodragon@example.com",
 		Password: "password123",
 	}
-	_ = st.CreateUser(u2)
+	_ = st.CreateUser(context.Background(), u2)
 
 	dragon := &models.Dragon{
 		Name:   "Puff",
 		Color:  "Green",
 		UserID: u.ID,
 	}
-	_ = st.CreateDragon(dragon)
+	_ = st.CreateDragon(context.Background(), dragon)
 
 	tests := []struct {
 		name           string

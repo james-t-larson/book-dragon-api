@@ -32,9 +32,9 @@ func TestFocusTimerComplete(t *testing.T) {
 			setup: func(st *store.Store) (*models.User, *models.Book) {
 				hashedPassword, _ := auth.HashPassword("password123")
 				u := &models.User{Username: "testuser", Email: "test@example.com", Password: hashedPassword}
-				_ = st.CreateUser(u)
-				b, _ := st.GetOrCreateBook("Dune", "Frank Herbert", "Sci-Fi", 412)
-				_ = st.IncrementUserBook(u.ID, b.ID)
+				_ = st.CreateUser(context.Background(), u)
+				b, _ := st.GetOrCreateBook(context.Background(), "Dune", "Frank Herbert", "Sci-Fi", 412)
+				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -51,9 +51,9 @@ func TestFocusTimerComplete(t *testing.T) {
 			setup: func(st *store.Store) (*models.User, *models.Book) {
 				hashedPassword, _ := auth.HashPassword("pass")
 				u := &models.User{Username: "testuser6", Email: "test6@example.com", Password: hashedPassword}
-				_ = st.CreateUser(u)
-				b, _ := st.GetOrCreateBook("Neuromancer", "William Gibson", "Sci-Fi", 271)
-				_ = st.IncrementUserBook(u.ID, b.ID)
+				_ = st.CreateUser(context.Background(), u)
+				b, _ := st.GetOrCreateBook(context.Background(), "Neuromancer", "William Gibson", "Sci-Fi", 271)
+				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -69,10 +69,10 @@ func TestFocusTimerComplete(t *testing.T) {
 			setup: func(st *store.Store) (*models.User, *models.Book) {
 				hashedPassword, _ := auth.HashPassword("password123")
 				u := &models.User{Username: "testuser2", Email: "test2@example.com", Password: hashedPassword}
-				_ = st.CreateUser(u)
-				b, _ := st.GetOrCreateBook("1984", "George Orwell", "Dystopian", 328)
-				_ = st.IncrementUserBook(u.ID, b.ID)
-				st.AddCoinsToUser(u.ID, 5)
+				_ = st.CreateUser(context.Background(), u)
+				b, _ := st.GetOrCreateBook(context.Background(), "1984", "George Orwell", "Dystopian", 328)
+				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
+				st.AddCoinsToUser(context.Background(), u.ID, 5)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -88,9 +88,9 @@ func TestFocusTimerComplete(t *testing.T) {
 			name: "Pages Read Omitted (Required)",
 			setup: func(st *store.Store) (*models.User, *models.Book) {
 				u := &models.User{Username: "testuser8", Email: "test8@test.com", Password: "pwd"}
-				_ = st.CreateUser(u)
-				b, _ := st.GetOrCreateBook("Dune Messiah", "Frank Herbert", "Sci-Fi", 331)
-				_ = st.IncrementUserBook(u.ID, b.ID)
+				_ = st.CreateUser(context.Background(), u)
+				b, _ := st.GetOrCreateBook(context.Background(), "Dune Messiah", "Frank Herbert", "Sci-Fi", 331)
+				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -105,8 +105,8 @@ func TestFocusTimerComplete(t *testing.T) {
 			setup: func(st *store.Store) (*models.User, *models.Book) {
 				hashedPassword, _ := auth.HashPassword("password123")
 				u := &models.User{Username: "testuser3", Email: "test3@example.com", Password: hashedPassword}
-				_ = st.CreateUser(u)
-				b, _ := st.GetOrCreateBook("Foundation", "Isaac Asimov", "Sci-Fi", 255)
+				_ = st.CreateUser(context.Background(), u)
+				b, _ := st.GetOrCreateBook(context.Background(), "Foundation", "Isaac Asimov", "Sci-Fi", 255)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -119,9 +119,9 @@ func TestFocusTimerComplete(t *testing.T) {
 			name: "Zero Minutes",
 			setup: func(st *store.Store) (*models.User, *models.Book) {
 				u := &models.User{Username: "testuser4", Email: "test4@test.com", Password: "pwd"}
-				_ = st.CreateUser(u)
-				b, _ := st.GetOrCreateBook("Brave New World", "Aldous Huxley", "Dystopian", 311)
-				_ = st.IncrementUserBook(u.ID, b.ID)
+				_ = st.CreateUser(context.Background(), u)
+				b, _ := st.GetOrCreateBook(context.Background(), "Brave New World", "Aldous Huxley", "Dystopian", 311)
+				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -134,9 +134,9 @@ func TestFocusTimerComplete(t *testing.T) {
 			name: "Negative Pages Read",
 			setup: func(st *store.Store) (*models.User, *models.Book) {
 				u := &models.User{Username: "testuser7", Email: "test7@test.com", Password: "pwd"}
-				_ = st.CreateUser(u)
-				b, _ := st.GetOrCreateBook("The Road", "Cormac McCarthy", "Post-Apocalyptic", 287)
-				_ = st.IncrementUserBook(u.ID, b.ID)
+				_ = st.CreateUser(context.Background(), u)
+				b, _ := st.GetOrCreateBook(context.Background(), "The Road", "Cormac McCarthy", "Post-Apocalyptic", 287)
+				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -149,9 +149,9 @@ func TestFocusTimerComplete(t *testing.T) {
 			name: "Unauthorized",
 			setup: func(st *store.Store) (*models.User, *models.Book) {
 				u := &models.User{Username: "testuser5", Email: "test5@test.com", Password: "pwd"}
-				_ = st.CreateUser(u)
-				b, _ := st.GetOrCreateBook("Fahrenheit 451", "Ray Bradbury", "Dystopian", 256)
-				_ = st.IncrementUserBook(u.ID, b.ID)
+				_ = st.CreateUser(context.Background(), u)
+				b, _ := st.GetOrCreateBook(context.Background(), "Fahrenheit 451", "Ray Bradbury", "Dystopian", 256)
+				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -204,7 +204,7 @@ func TestFocusTimerComplete(t *testing.T) {
 				}
 
 				if tc.verifyPagesMoved > 0 {
-					books, err := st.GetUserBooks(u.ID)
+					books, err := st.GetUserBooks(context.Background(), u.ID)
 					if err != nil {
 						t.Fatalf("failed to get user books: %v", err)
 					}

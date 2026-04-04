@@ -2,6 +2,7 @@ package usertest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -54,7 +55,7 @@ func TestRegister(t *testing.T) {
 					Email:    "test@example.com",
 					Password: "hashedpassword",
 				}
-				_ = st.CreateUser(u)
+				_ = st.CreateUser(context.Background(), u)
 			},
 			payload: models.RegisterRequest{
 				Username: "anotheruser",

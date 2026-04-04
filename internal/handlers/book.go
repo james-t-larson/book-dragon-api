@@ -44,14 +44,14 @@ func (h *BookHandler) PostBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 1. Get or Create Book
-	book, err := h.Store.GetOrCreateBook(req.Title, req.Author, req.Genre, req.TotalPages)
+	book, err := h.Store.GetOrCreateBook(r.Context(), req.Title, req.Author, req.Genre, req.TotalPages)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to process book")
 		return
 	}
 
 	// 2. Upsert/Increment UserBook relationship
-	if err := h.Store.IncrementUserBook(userID, book.ID); err != nil {
+	if err := h.Store.IncrementUserBook(r.Context(), userID, book.ID); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update user book relationship")
 		return
 	}
@@ -75,7 +75,7 @@ func (h *BookHandler) GetBooks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	books, err := h.Store.GetUserBooks(userID)
+	books, err := h.Store.GetUserBooks(r.Context(), userID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to get books")
 		return

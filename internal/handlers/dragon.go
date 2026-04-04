@@ -50,7 +50,7 @@ func (h *DragonHandler) CreateDragon(w http.ResponseWriter, r *http.Request) {
 		UserID: userID,
 	}
 
-	if err := h.Store.CreateDragon(dragon); err != nil {
+	if err := h.Store.CreateDragon(r.Context(), dragon); err != nil {
 		if err == store.ErrDragonAlreadyExists {
 			writeError(w, http.StatusConflict, err.Error())
 			return
@@ -79,7 +79,7 @@ func (h *DragonHandler) GetDragon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dragon, err := h.Store.GetDragonByUserID(userID)
+	dragon, err := h.Store.GetDragonByUserID(r.Context(), userID)
 	if err != nil {
 		if err == store.ErrDragonNotFound {
 			writeError(w, http.StatusNotFound, "dragon not found")

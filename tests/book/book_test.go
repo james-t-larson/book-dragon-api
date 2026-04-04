@@ -29,7 +29,7 @@ func setupUser(st *store.Store) *models.User {
 		Email:    "test@example.com",
 		Password: hashedPassword,
 	}
-	_ = st.CreateUser(u)
+	_ = st.CreateUser(context.Background(), u)
 	return u
 }
 
@@ -116,7 +116,7 @@ func TestPostBook(t *testing.T) {
 				}
 
 				// Verify read count
-				userBooks, _ := st.GetUserBooks(u.ID)
+				userBooks, _ := st.GetUserBooks(context.Background(), u.ID)
 				found := false
 				for _, ub := range userBooks {
 					if ub.Title == book.Title {
@@ -140,9 +140,9 @@ func TestGetBooks(t *testing.T) {
 	handler := &handlers.BookHandler{Store: st}
 
 	// Add a book
-	b, _ := st.GetOrCreateBook("Dune", "Frank Herbert", "Sci-Fi", 412)
-	_ = st.IncrementUserBook(u.ID, b.ID)
-	_ = st.IncrementUserBook(u.ID, b.ID) // Read count should be 2
+	b, _ := st.GetOrCreateBook(context.Background(), "Dune", "Frank Herbert", "Sci-Fi", 412)
+	_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
+	_ = st.IncrementUserBook(context.Background(), u.ID, b.ID) // Read count should be 2
 
 	tests := []struct {
 		name           string

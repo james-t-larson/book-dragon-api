@@ -12,6 +12,7 @@ import (
 	_ "book-dragon/docs"
 	"book-dragon/internal/auth"
 	"book-dragon/internal/handlers"
+	appmiddleware "book-dragon/internal/middleware"
 	"book-dragon/internal/store"
 )
 
@@ -43,7 +44,7 @@ func main() {
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 		MaxAge:         300,
 	}))
-	r.Use(middleware.Logger)
+	r.Use(appmiddleware.RequestLogger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.AllowContentType("application/json"))
 

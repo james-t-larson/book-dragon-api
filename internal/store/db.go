@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/mattn/go-sqlite3"
 
+	"book-dragon/internal/middleware"
 	"book-dragon/internal/models"
 )
 
@@ -63,11 +65,31 @@ func New(dbPath string) (*Store, error) {
 	return &Store{db: db}, nil
 }
 
-func (s *Store) CreateUser(u *models.User) error {
-	query := `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`
-	result, err := s.db.Exec(query, u.Username, u.Email, u.Password)
+func (s *Store) exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	if queries, ok := ctx.Value(middleware.QueriesContextKey).(*[]string); ok {
+		*queries = append(*queries, query)
+	}
+	return s.db.ExecContext(ctx, query, args...)
+}
+
+func (s *Store) queryRow(ctx context.Context, query string, args ...any) *sql.Row {
+	if queries, ok := ctx.Value(middleware.QueriesContextKey).(*[]string); ok {
+		*queries = append(*queries, query)
+	}
+	return s.db.QueryRowContext(ctx, query, args...)
+}
+
+func (s *Store) query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	if queries, ok := ctx.Value(middleware.QueriesContextKey).(*[]string); ok {
+		*queries = append(*queries, query)
+	}
+	return s.db.QueryContext(ctx, query, args...)
+}
+
+func (s *Store) CreateUser(ctx context.Context, u *models.User) error {
+	queryString := `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`
+	result, err := s.exec(ctx, queryString, u.Username, u.Email, u.Password)
 	if err != nil {
-		// Basic check for SQLite unique constraint error
 		if err.Error() == "UNIQUE constraint failed: users.email" {
 			return ErrDuplicateEmail
 		}
@@ -83,15 +105,15 @@ func (s *Store) CreateUser(u *models.User) error {
 	return nil
 }
 
-func (s *Store) GetUserByEmail(email string) (*models.User, error) {
-	query := `
+func (s *Store) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	queryString := `
 		SELECT u.id, u.username, u.email, u.password, u.created_at, u.coins,
 		       d.id, d.name, d.color
 		FROM users u
 		LEFT JOIN dragons d ON u.id = d.user_id
 		WHERE u.email = ?
 	`
-	row := s.db.QueryRow(query, email)
+	row := s.queryRow(ctx, queryString, email)
 
 	var u models.User
 	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.CreatedAt, &u.Coins, &u.DragonID, &u.DragonName, &u.DragonColor)
@@ -102,7 +124,7 @@ func (s *Store) GetUserByEmail(email string) (*models.User, error) {
 		return nil, err
 	}
 
-	books, err := s.GetUserBookSummaries(u.ID)
+	books, err := s.GetUserBookSummaries(ctx, u.ID)
 	if err == nil && len(books) > 0 {
 		u.Books = books
 	} else {
@@ -112,15 +134,15 @@ func (s *Store) GetUserByEmail(email string) (*models.User, error) {
 	return &u, nil
 }
 
-func (s *Store) GetUserByID(id int64) (*models.User, error) {
-	query := `
+func (s *Store) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
+	queryString := `
 		SELECT u.id, u.username, u.email, u.password, u.created_at, u.coins,
 		       d.id, d.name, d.color
 		FROM users u
 		LEFT JOIN dragons d ON u.id = d.user_id
 		WHERE u.id = ?
 	`
-	row := s.db.QueryRow(query, id)
+	row := s.queryRow(ctx, queryString, id)
 
 	var u models.User
 	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.CreatedAt, &u.Coins, &u.DragonID, &u.DragonName, &u.DragonColor)
@@ -131,7 +153,7 @@ func (s *Store) GetUserByID(id int64) (*models.User, error) {
 		return nil, err
 	}
 
-	books, err := s.GetUserBookSummaries(u.ID)
+	books, err := s.GetUserBookSummaries(ctx, u.ID)
 	if err == nil && len(books) > 0 {
 		u.Books = books
 	} else {
@@ -141,9 +163,9 @@ func (s *Store) GetUserByID(id int64) (*models.User, error) {
 	return &u, nil
 }
 
-func (s *Store) CreateDragon(d *models.Dragon) error {
-	query := `INSERT INTO dragons (name, color, user_id) VALUES (?, ?, ?)`
-	result, err := s.db.Exec(query, d.Name, d.Color, d.UserID)
+func (s *Store) CreateDragon(ctx context.Context, d *models.Dragon) error {
+	queryString := `INSERT INTO dragons (name, color, user_id) VALUES (?, ?, ?)`
+	result, err := s.exec(ctx, queryString, d.Name, d.Color, d.UserID)
 	if err != nil {
 		if err.Error() == "UNIQUE constraint failed: dragons.user_id" {
 			return ErrDragonAlreadyExists
@@ -160,9 +182,9 @@ func (s *Store) CreateDragon(d *models.Dragon) error {
 	return nil
 }
 
-func (s *Store) GetDragonByUserID(userID int64) (*models.Dragon, error) {
-	query := `SELECT id, name, color, user_id, created_at FROM dragons WHERE user_id = ?`
-	row := s.db.QueryRow(query, userID)
+func (s *Store) GetDragonByUserID(ctx context.Context, userID int64) (*models.Dragon, error) {
+	queryString := `SELECT id, name, color, user_id, created_at FROM dragons WHERE user_id = ?`
+	row := s.queryRow(ctx, queryString, userID)
 
 	var d models.Dragon
 	err := row.Scan(&d.ID, &d.Name, &d.Color, &d.UserID, &d.CreatedAt)
@@ -176,18 +198,17 @@ func (s *Store) GetDragonByUserID(userID int64) (*models.Dragon, error) {
 	return &d, nil
 }
 
-func (s *Store) AddCoinsToUser(userID int64, coinsToAdd int64) (int64, error) {
-	query := `UPDATE users SET coins = coins + ? WHERE id = ?`
-	_, err := s.db.Exec(query, coinsToAdd, userID)
+func (s *Store) AddCoinsToUser(ctx context.Context, userID int64, coinsToAdd int64) (int64, error) {
+	queryString := `UPDATE users SET coins = coins + ? WHERE id = ?`
+	_, err := s.exec(ctx, queryString, coinsToAdd, userID)
 	if err != nil {
 		return 0, err
 	}
 
 	var totalCoins int64
-	err = s.db.QueryRow(`SELECT coins FROM users WHERE id = ?`, userID).Scan(&totalCoins)
+	err = s.queryRow(ctx, `SELECT coins FROM users WHERE id = ?`, userID).Scan(&totalCoins)
 	if err != nil {
 		return 0, err
 	}
 	return totalCoins, nil
 }
-

@@ -60,7 +60,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Password: hashedPassword,
 	}
 
-	if err := h.Store.CreateUser(user); err != nil {
+	if err := h.Store.CreateUser(r.Context(), user); err != nil {
 		if err == store.ErrDuplicateEmail {
 			writeError(w, http.StatusConflict, err.Error())
 			return
@@ -99,7 +99,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Store.GetUserByEmail(req.Email)
+	user, err := h.Store.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
 		if err == store.ErrUserNotFound {
 			writeError(w, http.StatusUnauthorized, "invalid email or password")
@@ -142,7 +142,7 @@ func (h *UserHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Store.GetUserByID(userID)
+	user, err := h.Store.GetUserByID(r.Context(), userID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
@@ -210,7 +210,7 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	hasBook, err := h.Store.HasUserBook(userID, req.BookID)
+	hasBook, err := h.Store.HasUserBook(r.Context(), userID, req.BookID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to verify book ownership")
 		return
@@ -222,14 +222,14 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 
 	coinsEarned := int64((req.Minutes / 5) * 3)
 
-	totalCoins, err := h.Store.AddCoinsToUser(userID, coinsEarned)
+	totalCoins, err := h.Store.AddCoinsToUser(r.Context(), userID, coinsEarned)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update coins")
 		return
 	}
 
 	if *req.PagesRead > 0 {
-		if err := h.Store.AddPagesRead(userID, req.BookID, *req.PagesRead); err != nil {
+		if err := h.Store.AddPagesRead(r.Context(), userID, req.BookID, *req.PagesRead); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to update reading progress")
 			return
 		}

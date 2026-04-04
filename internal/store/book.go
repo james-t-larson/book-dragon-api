@@ -1,16 +1,16 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
 	"book-dragon/internal/models"
 )
 
-func (s *Store) GetOrCreateBook(title, author, genre string, totalPages int) (*models.Book, error) {
-	// Try to find the book
-	query := `SELECT id, title, author, genre, total_pages, created_at FROM books WHERE author = ? AND title = ?`
-	row := s.db.QueryRow(query, author, title)
+func (s *Store) GetOrCreateBook(ctx context.Context, title, author, genre string, totalPages int) (*models.Book, error) {
+	queryString := `SELECT id, title, author, genre, total_pages, created_at FROM books WHERE author = ? AND title = ?`
+	row := s.queryRow(ctx, queryString, author, title)
 
 	var b models.Book
 	err := row.Scan(&b.ID, &b.Title, &b.Author, &b.Genre, &b.TotalPages, &b.CreatedAt)
@@ -21,11 +21,9 @@ func (s *Store) GetOrCreateBook(title, author, genre string, totalPages int) (*m
 		return nil, err
 	}
 
-	// Insert if not found
 	insertQuery := `INSERT INTO books (title, author, genre, total_pages) VALUES (?, ?, ?, ?)`
-	result, err := s.db.Exec(insertQuery, title, author, genre, totalPages)
+	result, err := s.exec(ctx, insertQuery, title, author, genre, totalPages)
 	if err != nil {
-		// Just in case of concurrent insert
 		return nil, err
 	}
 
@@ -34,12 +32,12 @@ func (s *Store) GetOrCreateBook(title, author, genre string, totalPages int) (*m
 		return nil, err
 	}
 
-	return s.GetBookByID(id)
+	return s.GetBookByID(ctx, id)
 }
 
-func (s *Store) GetBookByID(id int64) (*models.Book, error) {
-	query := `SELECT id, title, author, genre, total_pages, created_at FROM books WHERE id = ?`
-	row := s.db.QueryRow(query, id)
+func (s *Store) GetBookByID(ctx context.Context, id int64) (*models.Book, error) {
+	queryString := `SELECT id, title, author, genre, total_pages, created_at FROM books WHERE id = ?`
+	row := s.queryRow(ctx, queryString, id)
 
 	var b models.Book
 	err := row.Scan(&b.ID, &b.Title, &b.Author, &b.Genre, &b.TotalPages, &b.CreatedAt)
@@ -50,38 +48,35 @@ func (s *Store) GetBookByID(id int64) (*models.Book, error) {
 	return &b, nil
 }
 
-func (s *Store) IncrementUserBook(userID, bookID int64) error {
-	// Try to find the user book
+func (s *Store) IncrementUserBook(ctx context.Context, userID, bookID int64) error {
 	checkQuery := `SELECT id, read_count FROM user_books WHERE user_id = ? AND book_id = ?`
-	row := s.db.QueryRow(checkQuery, userID, bookID)
+	row := s.queryRow(ctx, checkQuery, userID, bookID)
 
 	var id int64
 	var readCount int
 	err := row.Scan(&id, &readCount)
 	
 	if errors.Is(err, sql.ErrNoRows) {
-		// Not found, insert with read_count = 1
 		insertQuery := `INSERT INTO user_books (user_id, book_id, read_count) VALUES (?, ?, 1)`
-		_, err := s.db.Exec(insertQuery, userID, bookID)
+		_, err := s.exec(ctx, insertQuery, userID, bookID)
 		return err
 	} else if err != nil {
 		return err
 	}
 
-	// Found, increment read_count
 	updateQuery := `UPDATE user_books SET read_count = read_count + 1 WHERE id = ?`
-	_, err = s.db.Exec(updateQuery, id)
+	_, err = s.exec(ctx, updateQuery, id)
 	return err
 }
 
-func (s *Store) GetUserBooks(userID int64) ([]models.UserBookResponse, error) {
-	query := `
+func (s *Store) GetUserBooks(ctx context.Context, userID int64) ([]models.UserBookResponse, error) {
+	queryString := `
 		SELECT b.id, b.title, b.author, b.genre, b.total_pages, ub.read_count, ub.current_page
 		FROM books b
 		JOIN user_books ub ON b.id = ub.book_id
 		WHERE ub.user_id = ?
 	`
-	rows, err := s.db.Query(query, userID)
+	rows, err := s.query(ctx, queryString, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,14 +94,14 @@ func (s *Store) GetUserBooks(userID int64) ([]models.UserBookResponse, error) {
 	return books, nil
 }
 
-func (s *Store) GetUserBookSummaries(userID int64) ([]models.UserBookSummary, error) {
-	query := `
+func (s *Store) GetUserBookSummaries(ctx context.Context, userID int64) ([]models.UserBookSummary, error) {
+	queryString := `
 		SELECT b.id, b.title, ub.read_count
 		FROM books b
 		JOIN user_books ub ON b.id = ub.book_id
 		WHERE ub.user_id = ?
 	`
-	rows, err := s.db.Query(query, userID)
+	rows, err := s.query(ctx, queryString, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,10 +119,10 @@ func (s *Store) GetUserBookSummaries(userID int64) ([]models.UserBookSummary, er
 	return books, nil
 }
 
-func (s *Store) HasUserBook(userID, bookID int64) (bool, error) {
-	query := `SELECT 1 FROM user_books WHERE user_id = ? AND book_id = ?`
+func (s *Store) HasUserBook(ctx context.Context, userID, bookID int64) (bool, error) {
+	queryString := `SELECT 1 FROM user_books WHERE user_id = ? AND book_id = ?`
 	var exists int
-	err := s.db.QueryRow(query, userID, bookID).Scan(&exists)
+	err := s.queryRow(ctx, queryString, userID, bookID).Scan(&exists)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
@@ -137,9 +132,8 @@ func (s *Store) HasUserBook(userID, bookID int64) (bool, error) {
 	return true, nil
 }
 
-func (s *Store) AddPagesRead(userID, bookID int64, pagesRead int) error {
-	query := `UPDATE user_books SET current_page = current_page + ? WHERE user_id = ? AND book_id = ?`
-	_, err := s.db.Exec(query, pagesRead, userID, bookID)
+func (s *Store) AddPagesRead(ctx context.Context, userID, bookID int64, pagesRead int) error {
+	queryString := `UPDATE user_books SET current_page = current_page + ? WHERE user_id = ? AND book_id = ?`
+	_, err := s.exec(ctx, queryString, pagesRead, userID, bookID)
 	return err
 }
-
