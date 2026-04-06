@@ -200,13 +200,13 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if req.PagesRead == nil {
-		writeError(w, http.StatusBadRequest, "pages_read is required")
+	if req.CurrentPage == nil {
+		writeError(w, http.StatusBadRequest, "current_page is required")
 		return
 	}
 
-	if *req.PagesRead < 0 {
-		writeError(w, http.StatusBadRequest, "pages_read must be zero or positive")
+	if *req.CurrentPage < 0 {
+		writeError(w, http.StatusBadRequest, "current_page must be zero or positive")
 		return
 	}
 
@@ -228,11 +228,9 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if *req.PagesRead > 0 {
-		if err := h.Store.AddPagesRead(r.Context(), userID, req.BookID, *req.PagesRead); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to update reading progress")
-			return
-		}
+	if err := h.Store.UpdateUserBookProgress(r.Context(), userID, req.BookID, *req.CurrentPage); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update reading progress")
+		return
 	}
 
 	writeJSON(w, http.StatusOK, models.FocusTimerResponse{

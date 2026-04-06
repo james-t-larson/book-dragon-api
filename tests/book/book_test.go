@@ -55,10 +55,10 @@ func TestPostBook(t *testing.T) {
 			},
 			setContext:     true,
 			expectedStatus: http.StatusCreated,
-			verifyCount:    1,
+			verifyCount:    0,
 		},
 		{
-			name: "Increment Existing Book",
+			name: "Add Existing Book",
 			payload: models.CreateBookRequest{
 				Title:      "1984",
 				Author:     "George Orwell",
@@ -67,7 +67,7 @@ func TestPostBook(t *testing.T) {
 			},
 			setContext:     true,
 			expectedStatus: http.StatusCreated,
-			verifyCount:    2,
+			verifyCount:    0,
 		},
 		{
 			name: "Missing Fields",
@@ -141,8 +141,8 @@ func TestGetBooks(t *testing.T) {
 
 	// Add a book
 	b, _ := st.GetOrCreateBook(context.Background(), "Dune", "Frank Herbert", "Sci-Fi", 412)
-	_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
-	_ = st.IncrementUserBook(context.Background(), u.ID, b.ID) // Read count should be 2
+	_ = st.AddUserBook(context.Background(), u.ID, b.ID)
+	_ = st.AddUserBook(context.Background(), u.ID, b.ID) // Read count should still be 0
 
 	tests := []struct {
 		name           string
@@ -162,8 +162,8 @@ func TestGetBooks(t *testing.T) {
 				if len(books) != 1 {
 					t.Fatalf("expected 1 book, got %d", len(books))
 				}
-				if books[0].Title != "Dune" || books[0].ReadCount != 2 {
-					t.Errorf("expected book 'Dune' with read count 2, got title %s and count %d", books[0].Title, books[0].ReadCount)
+				if books[0].Title != "Dune" || books[0].ReadCount != 0 {
+					t.Errorf("expected book 'Dune' with read count 0, got title %s and count %d", books[0].Title, books[0].ReadCount)
 				}
 				if books[0].ID == 0 {
 					t.Errorf("expected book ID to be non-zero in GET /books response")

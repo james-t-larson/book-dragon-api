@@ -50,8 +50,8 @@ func (h *BookHandler) PostBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Upsert/Increment UserBook relationship
-	if err := h.Store.IncrementUserBook(r.Context(), userID, book.ID); err != nil {
+	// 2. Ensure UserBook relationship exists
+	if err := h.Store.AddUserBook(r.Context(), userID, book.ID); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update user book relationship")
 		return
 	}

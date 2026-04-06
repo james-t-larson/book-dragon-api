@@ -39,7 +39,7 @@ func TestLogin(t *testing.T) {
 				}
 				_ = st.CreateDragon(context.Background(), d)
 				b, _ := st.GetOrCreateBook(context.Background(), "The Hobbit", "J.R.R. Tolkien", "Fantasy", 310)
-				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
+				_ = st.AddUserBook(context.Background(), u.ID, b.ID)
 			},
 			payload: models.LoginRequest{
 				Email:    "test@example.com",
@@ -64,8 +64,8 @@ func TestLogin(t *testing.T) {
 						t.Errorf("expected dragon Toothless, got %v", *resp.User.DragonName)
 					}
 				}
-				if len(resp.User.Books) != 1 || resp.User.Books[0].Title != "The Hobbit" || resp.User.Books[0].ReadCount != 1 {
-					t.Errorf("expected 1 book 'The Hobbit' with read count 1, got %v", resp.User.Books)
+				if len(resp.User.Books) != 1 || resp.User.Books[0].Title != "The Hobbit" || resp.User.Books[0].ReadCount != 0 {
+					t.Errorf("expected 1 book 'The Hobbit' with read count 0, got %v", resp.User.Books)
 				}
 				if resp.User.Books[0].ID == 0 {
 					t.Errorf("expected book ID to be non-zero in /login response")

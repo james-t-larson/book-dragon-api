@@ -48,24 +48,16 @@ func (s *Store) GetBookByID(ctx context.Context, id int64) (*models.Book, error)
 	return &b, nil
 }
 
-func (s *Store) IncrementUserBook(ctx context.Context, userID, bookID int64) error {
-	checkQuery := `SELECT id, read_count FROM user_books WHERE user_id = ? AND book_id = ?`
-	row := s.queryRow(ctx, checkQuery, userID, bookID)
-
-	var id int64
-	var readCount int
-	err := row.Scan(&id, &readCount)
+func (s *Store) AddUserBook(ctx context.Context, userID, bookID int64) error {
+	checkQuery := `SELECT 1 FROM user_books WHERE user_id = ? AND book_id = ?`
+	var exists int
+	err := s.queryRow(ctx, checkQuery, userID, bookID).Scan(&exists)
 	
 	if errors.Is(err, sql.ErrNoRows) {
-		insertQuery := `INSERT INTO user_books (user_id, book_id, read_count) VALUES (?, ?, 1)`
+		insertQuery := `INSERT INTO user_books (user_id, book_id, read_count) VALUES (?, ?, 0)`
 		_, err := s.exec(ctx, insertQuery, userID, bookID)
 		return err
-	} else if err != nil {
-		return err
 	}
-
-	updateQuery := `UPDATE user_books SET read_count = read_count + 1 WHERE id = ?`
-	_, err = s.exec(ctx, updateQuery, id)
 	return err
 }
 
@@ -132,8 +124,21 @@ func (s *Store) HasUserBook(ctx context.Context, userID, bookID int64) (bool, er
 	return true, nil
 }
 
-func (s *Store) AddPagesRead(ctx context.Context, userID, bookID int64, pagesRead int) error {
-	queryString := `UPDATE user_books SET current_page = current_page + ? WHERE user_id = ? AND book_id = ?`
-	_, err := s.exec(ctx, queryString, pagesRead, userID, bookID)
+func (s *Store) UpdateUserBookProgress(ctx context.Context, userID, bookID int64, currentPage int) error {
+	book, err := s.GetBookByID(ctx, bookID)
+	if err != nil {
+		return err
+	}
+
+	readCountIncrement := 0
+	finalCurrentPage := currentPage
+
+	if currentPage >= book.TotalPages {
+		readCountIncrement = 1
+		finalCurrentPage = 0
+	}
+
+	queryString := `UPDATE user_books SET current_page = ?, read_count = read_count + ? WHERE user_id = ? AND book_id = ?`
+	_, err = s.exec(ctx, queryString, finalCurrentPage, readCountIncrement, userID, bookID)
 	return err
 }

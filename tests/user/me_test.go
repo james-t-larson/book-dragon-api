@@ -38,7 +38,7 @@ func TestMe(t *testing.T) {
 				}
 				_ = st.CreateDragon(context.Background(), d)
 				b, _ := st.GetOrCreateBook(context.Background(), "The Hobbit", "J.R.R. Tolkien", "Fantasy", 310)
-				_ = st.IncrementUserBook(context.Background(), u.ID, b.ID)
+				_ = st.AddUserBook(context.Background(), u.ID, b.ID)
 				return u
 			},
 			setContext:     true,
@@ -61,8 +61,8 @@ func TestMe(t *testing.T) {
 						t.Errorf("expected dragon Toothless, got %v", *resp.DragonName)
 					}
 				}
-				if len(resp.Books) != 1 || resp.Books[0].Title != "The Hobbit" || resp.Books[0].ReadCount != 1 {
-					t.Errorf("expected 1 book 'The Hobbit' with read count 1, got %v", resp.Books)
+				if len(resp.Books) != 1 || resp.Books[0].Title != "The Hobbit" || resp.Books[0].ReadCount != 0 {
+					t.Errorf("expected 1 book 'The Hobbit' with read count 0, got %v", resp.Books)
 				}
 				if resp.Books[0].ID == 0 {
 					t.Errorf("expected book ID to be non-zero in /me response")
