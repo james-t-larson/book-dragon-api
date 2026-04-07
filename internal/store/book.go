@@ -49,25 +49,40 @@ func (s *Store) GetBookByID(ctx context.Context, id int64) (*models.Book, error)
 }
 
 func (s *Store) AddUserBook(ctx context.Context, userID, bookID int64) error {
+	return s.AddUserBookWithReading(ctx, userID, bookID, false)
+}
+
+// AddUserBookWithReading inserts a user_book with explicit reading flag.
+func (s *Store) AddUserBookWithReading(ctx context.Context, userID, bookID int64, reading bool) error {
 	checkQuery := `SELECT 1 FROM user_books WHERE user_id = ? AND book_id = ?`
 	var exists int
 	err := s.queryRow(ctx, checkQuery, userID, bookID).Scan(&exists)
-	
+
 	if errors.Is(err, sql.ErrNoRows) {
-		insertQuery := `INSERT INTO user_books (user_id, book_id, read_count) VALUES (?, ?, 0)`
-		_, err := s.exec(ctx, insertQuery, userID, bookID)
+		insertQuery := `INSERT INTO user_books (user_id, book_id, read_count, reading) VALUES (?, ?, 0, ?)`
+		_, err := s.exec(ctx, insertQuery, userID, bookID, reading)
 		return err
 	}
 	return err
 }
 
-func (s *Store) GetUserBooks(ctx context.Context, userID int64) ([]models.UserBookResponse, error) {
+// UpdateUserBook updates reading flag and current page for a user's book.
+func (s *Store) UpdateUserBook(ctx context.Context, userID, bookID int64, reading bool, currentPage int) error {
+	if err := s.UpdateUserBookReading(ctx, userID, bookID, reading); err != nil {
+		return err
+	}
+	return s.UpdateUserBookProgress(ctx, userID, bookID, currentPage)
+}
+
+func (s *Store) GetUserBooks(ctx context.Context, userID int64, currentlyReading bool) ([]models.UserBookResponse, error) {
 	queryString := `
-		SELECT b.id, b.title, b.author, b.genre, b.total_pages, ub.read_count, ub.current_page
+		SELECT b.id, b.title, b.author, b.genre, b.total_pages, ub.read_count, ub.current_page, ub.reading
 		FROM books b
 		JOIN user_books ub ON b.id = ub.book_id
-		WHERE ub.user_id = ?
-	`
+		WHERE ub.user_id = ?`
+	if currentlyReading {
+		queryString += ` AND ub.reading = 1`
+	}
 	rows, err := s.query(ctx, queryString, userID)
 	if err != nil {
 		return nil, err
@@ -77,7 +92,7 @@ func (s *Store) GetUserBooks(ctx context.Context, userID int64) ([]models.UserBo
 	var books []models.UserBookResponse
 	for rows.Next() {
 		var b models.UserBookResponse
-		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Genre, &b.TotalPages, &b.ReadCount, &b.CurrentPage); err != nil {
+		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Genre, &b.TotalPages, &b.ReadCount, &b.CurrentPage, &b.Reading); err != nil {
 			return nil, err
 		}
 		books = append(books, b)
@@ -136,9 +151,20 @@ func (s *Store) UpdateUserBookProgress(ctx context.Context, userID, bookID int64
 	if currentPage >= book.TotalPages {
 		readCountIncrement = 1
 		finalCurrentPage = 0
+		// also clear reading flag when completed
+		if err := s.UpdateUserBookReading(ctx, userID, bookID, false); err != nil {
+			return err
+		}
 	}
 
 	queryString := `UPDATE user_books SET current_page = ?, read_count = read_count + ? WHERE user_id = ? AND book_id = ?`
 	_, err = s.exec(ctx, queryString, finalCurrentPage, readCountIncrement, userID, bookID)
+	return err
+}
+
+// UpdateUserBookReading sets the reading flag for a user's book.
+func (s *Store) UpdateUserBookReading(ctx context.Context, userID, bookID int64, reading bool) error {
+	queryString := `UPDATE user_books SET reading = ? WHERE user_id = ? AND book_id = ?`
+	_, err := s.exec(ctx, queryString, reading, userID, bookID)
 	return err
 }

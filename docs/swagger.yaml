@@ -28,6 +28,8 @@ definitions:
         type: string
       genre:
         type: string
+      reading:
+        type: boolean
       title:
         type: string
       total_pages:
@@ -62,9 +64,9 @@ definitions:
     properties:
       book_id:
         type: integer
-      minutes:
+      current_page:
         type: integer
-      pages_read:
+      minutes:
         type: integer
     type: object
   models.FocusTimerResponse:
@@ -89,6 +91,13 @@ definitions:
         type: string
       username:
         type: string
+    type: object
+  models.UpdateBookRequest:
+    properties:
+      current_page:
+        type: integer
+      reading:
+        type: boolean
     type: object
   models.User:
     properties:
@@ -125,6 +134,8 @@ definitions:
         type: integer
       read_count:
         type: integer
+      reading:
+        type: boolean
       title:
         type: string
       total_pages:
@@ -172,6 +183,11 @@ paths:
   /books:
     get:
       description: Get all books for the currently authenticated user
+      parameters:
+      - description: Filter by currently reading
+        in: query
+        name: currently_reading
+        type: boolean
       produces:
       - application/json
       responses:
@@ -228,6 +244,49 @@ paths:
       security:
       - BearerAuth: []
       summary: Add a book
+      tags:
+      - books
+  /books/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update a user's book status
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateBookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a book
       tags:
       - books
   /dragon:

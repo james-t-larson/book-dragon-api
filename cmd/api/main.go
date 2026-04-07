@@ -69,6 +69,7 @@ func main() {
 		// Book routes
 		r.Post("/books", bookHandler.PostBook)
 		r.Get("/books", bookHandler.GetBooks)
+		r.Put("/books/{id}", bookHandler.UpdateBook)
 	})
 
 	port := "8080"

@@ -67,6 +67,14 @@ const docTemplate = `{
                     "books"
                 ],
                 "summary": "Get user's books",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Filter by currently reading",
+                        "name": "currently_reading",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -124,6 +132,73 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/models.Book"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/books/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update a user's book status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "books"
+                ],
+                "summary": "Update a book",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Book ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateBookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -497,6 +572,9 @@ const docTemplate = `{
                 "genre": {
                     "type": "string"
                 },
+                "reading": {
+                    "type": "boolean"
+                },
                 "title": {
                     "type": "string"
                 },
@@ -550,10 +628,10 @@ const docTemplate = `{
                 "book_id": {
                     "type": "integer"
                 },
-                "minutes": {
+                "current_page": {
                     "type": "integer"
                 },
-                "pages_read": {
+                "minutes": {
                     "type": "integer"
                 }
             }
@@ -591,6 +669,17 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "models.UpdateBookRequest": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "reading": {
+                    "type": "boolean"
                 }
             }
         },
@@ -646,6 +735,9 @@ const docTemplate = `{
                 },
                 "read_count": {
                     "type": "integer"
+                },
+                "reading": {
+                    "type": "boolean"
                 },
                 "title": {
                     "type": "string"

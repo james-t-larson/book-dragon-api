@@ -72,7 +72,7 @@ func TestFocusTimerComplete(t *testing.T) {
 				u := &models.User{Username: "finisher", Email: "finish@test.com", Password: "pwd"}
 				_ = st.CreateUser(context.Background(), u)
 				b, _ := st.GetOrCreateBook(context.Background(), "The Hobbit", "J.R.R. Tolkien", "Fantasy", 310)
-				_ = st.AddUserBook(context.Background(), u.ID, b.ID)
+				_ = st.AddUserBookWithReading(context.Background(), u.ID, b.ID, true)
 				return u, b
 			},
 			payload: func(b *models.Book) interface{} {
@@ -225,7 +225,7 @@ func TestFocusTimerComplete(t *testing.T) {
 				}
 
 				if tc.verifyCurrentPage != nil || tc.verifyReadCount > 0 {
-					books, err := st.GetUserBooks(context.Background(), u.ID)
+					books, err := st.GetUserBooks(context.Background(), u.ID, false)
 					if err != nil {
 						t.Fatalf("failed to get user books: %v", err)
 					}
@@ -238,6 +238,9 @@ func TestFocusTimerComplete(t *testing.T) {
 							}
 							if tc.verifyReadCount > 0 && bk.ReadCount != tc.verifyReadCount {
 								t.Errorf("expected read_count %d, got %d", tc.verifyReadCount, bk.ReadCount)
+							}
+							if tc.name == "Finishing Book Increments Read Count and Resets Progress" && bk.Reading {
+								t.Errorf("expected reading flag to be cleared on completion")
 							}
 						}
 					}
