@@ -5,6 +5,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
+    image: registry.digitalocean.com/book-dragon/book-dragon-api:latest
     container_name: book-dragon-api
     restart: unless-stopped
     ports:
