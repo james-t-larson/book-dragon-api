@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"book-dragon/internal/auth"
 	"book-dragon/internal/models"
@@ -75,6 +76,10 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Inject tourney status (will be nil for new users)
+	tourneyStatus, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
+	user.TourneyStatus = tourneyStatus
+
 	writeJSON(w, http.StatusCreated, models.AuthResponse{
 		Token: token,
 		User:  *user,
@@ -120,6 +125,10 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Inject tourney status via lazy evaluation
+	tourneyStatus, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
+	user.TourneyStatus = tourneyStatus
+
 	writeJSON(w, http.StatusOK, models.AuthResponse{
 		Token: token,
 		User:  *user,
@@ -147,6 +156,10 @@ func (h *UserHandler) Me(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
 	}
+
+	// Inject tourney status via lazy evaluation
+	tourneyStatus, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
+	user.TourneyStatus = tourneyStatus
 
 	writeJSON(w, http.StatusOK, user)
 }
@@ -200,6 +213,11 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if req.Minutes > 1440 {
+		writeError(w, http.StatusBadRequest, "minutes cannot exceed 1440 (24 hours)")
+		return
+	}
+
 	if req.CurrentPage == nil {
 		writeError(w, http.StatusBadRequest, "current_page is required")
 		return
@@ -230,6 +248,13 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 
 	if err := h.Store.UpdateUserBookProgress(r.Context(), userID, req.BookID, *req.CurrentPage); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update reading progress")
+		return
+	}
+
+	// Upsert daily reading log for tourney tracking
+	today := time.Now().UTC().Format("2006-01-02")
+	if err := h.Store.UpsertDailyReadingLog(r.Context(), userID, today, req.Minutes); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to log daily reading")
 		return
 	}
 

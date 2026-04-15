@@ -34,6 +34,7 @@ func main() {
 	userHandler := &handlers.UserHandler{Store: st}
 	dragonHandler := &handlers.DragonHandler{Store: st}
 	bookHandler := &handlers.BookHandler{Store: st}
+	tourneyHandler := &handlers.TourneyHandler{Store: st}
 
 	r := chi.NewRouter()
 
@@ -51,6 +52,7 @@ func main() {
 	// Public routes
 	r.Post("/register", userHandler.Register)
 	r.Post("/login", userHandler.Login)
+	r.Get("/constants", tourneyHandler.GetConstants)
 
 	// Swagger documentation route
 	r.Get("/swagger/*", httpSwagger.Handler())
@@ -70,6 +72,11 @@ func main() {
 		r.Post("/books", bookHandler.PostBook)
 		r.Get("/books", bookHandler.GetBooks)
 		r.Put("/books/{id}", bookHandler.UpdateBook)
+
+		// Tourney routes
+		r.Get("/tourney", tourneyHandler.GetTourney)
+		r.Post("/tourney", tourneyHandler.CreateTourney)
+		r.Post("/join_tourney", tourneyHandler.JoinTourney)
 	})
 
 	port := "8080"

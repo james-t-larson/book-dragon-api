@@ -222,6 +222,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/constants": {
+            "get": {
+                "description": "Provides available configuration options for creating a new challenge",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tourney"
+                ],
+                "summary": "Get tourney configuration constants",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.TourneyConstantsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/dragon": {
             "get": {
                 "security": [
@@ -389,6 +415,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/join_tourney": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Joins an existing challenge via invite code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tourney"
+                ],
+                "summary": "Join an existing tourney",
+                "parameters": [
+                    {
+                        "description": "Join Info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.JoinChallengeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/login": {
             "post": {
                 "description": "Authenticate a user and return a JWT token",
@@ -526,6 +624,104 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tourney": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fetches the exact UI state for the Tourney Hall",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tourney"
+                ],
+                "summary": "Get active tourney status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.TourneyStatusResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new challenge and automatically enrolls the creator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tourney"
+                ],
+                "summary": "Create a new tourney",
+                "parameters": [
+                    {
+                        "description": "Challenge Info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateChallengeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.TourneyStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -563,6 +759,17 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ConstantOption": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.CreateBookRequest": {
             "type": "object",
             "properties": {
@@ -583,6 +790,20 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CreateChallengeRequest": {
+            "type": "object",
+            "properties": {
+                "daily_goal_minutes": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "overall_goal_days": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.CreateDragonRequest": {
             "type": "object",
             "properties": {
@@ -591,6 +812,20 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "models.DailyProgress": {
+            "type": "object",
+            "properties": {
+                "is_complete": {
+                    "type": "boolean"
+                },
+                "minute_goal": {
+                    "type": "integer"
+                },
+                "minutes_complete": {
+                    "type": "integer"
                 }
             }
         },
@@ -647,6 +882,14 @@ const docTemplate = `{
                 }
             }
         },
+        "models.JoinChallengeRequest": {
+            "type": "object",
+            "properties": {
+                "invite_code": {
+                    "type": "string"
+                }
+            }
+        },
         "models.LoginRequest": {
             "type": "object",
             "properties": {
@@ -655,6 +898,23 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string"
+                }
+            }
+        },
+        "models.OverallProgress": {
+            "type": "object",
+            "properties": {
+                "day_number": {
+                    "type": "integer"
+                },
+                "days_complete": {
+                    "type": "integer"
+                },
+                "days_goal": {
+                    "type": "integer"
+                },
+                "is_complete": {
+                    "type": "boolean"
                 }
             }
         },
@@ -669,6 +929,57 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "models.TourneyConfig": {
+            "type": "object",
+            "properties": {
+                "daily_goal_minutes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ConstantOption"
+                    }
+                },
+                "overall_goal_days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ConstantOption"
+                    }
+                }
+            }
+        },
+        "models.TourneyConstantsResponse": {
+            "type": "object",
+            "properties": {
+                "tourney_config": {
+                    "$ref": "#/definitions/models.TourneyConfig"
+                }
+            }
+        },
+        "models.TourneyStatusResponse": {
+            "type": "object",
+            "properties": {
+                "daily_progress": {
+                    "$ref": "#/definitions/models.DailyProgress"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "invite_code": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "overall_progress": {
+                    "$ref": "#/definitions/models.OverallProgress"
+                },
+                "taunt_messages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -712,6 +1023,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "tourney": {
+                    "$ref": "#/definitions/models.TourneyStatusResponse"
                 },
                 "username": {
                     "type": "string"

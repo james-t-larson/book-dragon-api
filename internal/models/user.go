@@ -12,7 +12,8 @@ type User struct {
 	DragonName  *string           `json:"dragon_name,omitempty"`
 	DragonColor *string           `json:"dragon_color,omitempty"`
 	Coins       int64             `json:"coins"`
-	Books       []UserBookSummary `json:"books,omitempty"`
+	Books         []UserBookSummary      `json:"books,omitempty"`
+	TourneyStatus *TourneyStatusResponse `json:"tourney,omitempty"`
 }
 
 type Dragon struct {
