@@ -5,6 +5,7 @@ type CreateChallengeRequest struct {
 	Name            string `json:"name"`
 	OverallGoalDays int    `json:"overall_goal_days"`
 	DailyGoalMins   int    `json:"daily_goal_minutes"`
+	Ante            int    `json:"ante"`
 }
 
 // JoinChallengeRequest is used for POST /join_tourney to join a challenge by invite code.
@@ -33,6 +34,10 @@ type TourneyStatusResponse struct {
 	ID              int64           `json:"id"`
 	Name            string          `json:"name"`
 	InviteCode      string          `json:"invite_code"`
+	StartTime       string          `json:"starttime"` // RFC3339 string
+	PotTotal        int             `json:"pot_total"`
+	ChallengerCount int             `json:"challenger_count"`
+	CompletedCount  int             `json:"completed_count"`
 	TauntMessages   []string        `json:"taunt_messages"`
 	DailyProgress   DailyProgress   `json:"daily_progress"`
 	OverallProgress OverallProgress `json:"overall_progress"`
@@ -63,13 +68,19 @@ type Challenge struct {
 	InviteCode       string
 	DurationDays     int
 	DailyMinutesGoal int
+	MinAnte          int
+	StartTime        string
+	PotTotal         int
+	ChallengerCount  int
+	CompletedCount   int
 }
 
 // UserChallenge represents a row from the user_challenges table.
 type UserChallenge struct {
-	ID          int64
-	UserID      int64
-	ChallengeID int64
-	Status      string
-	StartDate   string // YYYY-MM-DD
+	ID            int64
+	UserID        int64
+	ChallengeID   int64
+	Status        string
+	StartDate     string // YYYY-MM-DD
+	PayoutClaimed bool
 }

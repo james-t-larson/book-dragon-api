@@ -98,7 +98,12 @@ func (h *TourneyHandler) CreateTourney(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, _, err := h.Store.CreateChallenge(r.Context(), userID, req.Name, req.OverallGoalDays, req.DailyGoalMins)
+	if req.Ante < 0 {
+		writeError(w, http.StatusBadRequest, "ante must be a positive integer")
+		return
+	}
+
+	_, _, err := h.Store.CreateChallenge(r.Context(), userID, req.Name, req.OverallGoalDays, req.DailyGoalMins, req.Ante)
 	if err != nil {
 		if err == store.ErrActiveChallenge {
 			writeError(w, http.StatusConflict, "user already has an active challenge")
@@ -106,6 +111,10 @@ func (h *TourneyHandler) CreateTourney(w http.ResponseWriter, r *http.Request) {
 		}
 		if err == store.ErrInviteCodeCollision {
 			writeError(w, http.StatusInternalServerError, "failed to generate unique invite code")
+			return
+		}
+		if err == store.ErrInsufficientCoins {
+			writeError(w, http.StatusForbidden, "not enough coins to start the tournament")
 			return
 		}
 		// Check if validation error from store (invalid duration/minutes)
@@ -164,8 +173,12 @@ func (h *TourneyHandler) JoinTourney(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "invite code not found")
 		case store.ErrAlreadyEnrolled:
 			writeError(w, http.StatusConflict, "user is already enrolled in this challenge")
+		case store.ErrChallengeStarted:
+			writeError(w, http.StatusForbidden, "Cannot join a challenge after its start time.")
+		case store.ErrInsufficientCoins:
+			writeError(w, http.StatusForbidden, "Not enough coins to join challenge.")
 		default:
-			writeError(w, http.StatusInternalServerError, "failed to join challenge")
+			writeError(w, http.StatusInternalServerError, err.Error())
 		}
 		return
 	}

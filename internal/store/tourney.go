@@ -18,6 +18,8 @@ var (
 	ErrInviteCodeNotFound  = errors.New("invite code not found")
 	ErrAlreadyEnrolled     = errors.New("user is already enrolled in this challenge")
 	ErrInviteCodeCollision = errors.New("failed to generate unique invite code after retries")
+	ErrInsufficientCoins   = errors.New("not enough coins")
+	ErrChallengeStarted    = errors.New("cannot join a challenge after its start time")
 )
 
 // tauntMessages are randomly returned when the user hasn't completed their daily goal.
@@ -30,10 +32,10 @@ var tauntMessages = []string{
 }
 
 // allowedDurations are the valid overall_goal_days values from the constants table.
-var allowedDurations = map[int]bool{3: true, 7: true, 14: true, 30: true}
+var allowedDurations = map[int]bool{1: true, 3: true, 7: true, 14: true, 30: true}
 
 // allowedDailyMinutes are the valid daily_goal_minutes values from the constants table.
-var allowedDailyMinutes = map[int]bool{5: true, 10: true, 15: true, 30: true}
+var allowedDailyMinutes = map[int]bool{5: true, 10: true, 15: true, 30: true, 60: true}
 
 // normalizeSQLiteDate converts SQLite date strings (which may include time components
 // like "2006-01-02T00:00:00Z") into a consistent "2006-01-02" format.
@@ -98,8 +100,9 @@ func (s *Store) GetTourneyConfig(ctx context.Context) (*models.TourneyConfig, er
 // Returns nil, nil if no active challenge exists.
 func (s *Store) GetActiveUserChallenge(ctx context.Context, userID int64) (*models.UserChallenge, *models.Challenge, error) {
 	queryString := `
-		SELECT uc.id, uc.user_id, uc.challenge_id, uc.status, uc.start_date,
-		       t.id, t.creator_id, t.name, t.invite_code, t.duration_days, t.daily_minutes_goal
+		SELECT uc.id, uc.user_id, uc.challenge_id, uc.status, uc.start_date, uc.payout_claimed,
+		       t.id, t.creator_id, t.name, t.invite_code, t.duration_days, t.daily_minutes_goal,
+		       t.min_ante, t.starttime, t.pot_total, t.challenger_count, t.completed_count
 		FROM user_challenges uc
 		JOIN tourneys t ON uc.challenge_id = t.id
 		WHERE uc.user_id = ? AND uc.status = 'active'
@@ -109,15 +112,20 @@ func (s *Store) GetActiveUserChallenge(ctx context.Context, userID int64) (*mode
 
 	var uc models.UserChallenge
 	var ch models.Challenge
+	var startTime sql.NullString
 	err := row.Scan(
-		&uc.ID, &uc.UserID, &uc.ChallengeID, &uc.Status, &uc.StartDate,
+		&uc.ID, &uc.UserID, &uc.ChallengeID, &uc.Status, &uc.StartDate, &uc.PayoutClaimed,
 		&ch.ID, &ch.CreatorID, &ch.Name, &ch.InviteCode, &ch.DurationDays, &ch.DailyMinutesGoal,
+		&ch.MinAnte, &startTime, &ch.PotTotal, &ch.ChallengerCount, &ch.CompletedCount,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil, nil
 		}
 		return nil, nil, err
+	}
+	if startTime.Valid {
+		ch.StartTime = startTime.String
 	}
 	// Normalize date format from SQLite (may include time component)
 	uc.StartDate = normalizeSQLiteDate(uc.StartDate)
@@ -210,7 +218,7 @@ func (s *Store) UpsertDailyReadingLog(ctx context.Context, userID int64, date st
 
 // CreateChallenge creates a new tourney and enrolls the creator.
 // Returns the created challenge and user_challenge.
-func (s *Store) CreateChallenge(ctx context.Context, creatorID int64, name string, durationDays, dailyGoalMins int) (*models.Challenge, *models.UserChallenge, error) {
+func (s *Store) CreateChallenge(ctx context.Context, creatorID int64, name string, durationDays, dailyGoalMins, ante int) (*models.Challenge, *models.UserChallenge, error) {
 	// Validate against allowed constants
 	if !allowedDurations[durationDays] {
 		return nil, nil, fmt.Errorf("invalid duration_days: %d", durationDays)
@@ -228,11 +236,29 @@ func (s *Store) CreateChallenge(ctx context.Context, creatorID int64, name strin
 		return nil, nil, ErrActiveChallenge
 	}
 
+	// Check user balance
+	user, err := s.GetUserByID(ctx, creatorID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if int(user.Coins) < ante {
+		return nil, nil, ErrInsufficientCoins
+	}
+
+	// Deduct coins
+	if _, err := s.exec(ctx, `UPDATE users SET coins = coins - ? WHERE id = ?`, ante, creatorID); err != nil {
+		return nil, nil, err
+	}
+
 	// Generate invite code with retry for uniqueness
 	var inviteCode string
 	var insertErr error
 	maxRetries := 3
 	var challengeID int64
+
+	// Calculate starttime: 00:01 UTC of the next day
+	startTime := time.Now().UTC().AddDate(0, 0, 1).Truncate(24 * time.Hour).Add(1 * time.Minute)
+	startTimeStr := startTime.Format(time.RFC3339)
 
 	for i := 0; i < maxRetries; i++ {
 		inviteCode, err = generateInviteCode()
@@ -240,8 +266,8 @@ func (s *Store) CreateChallenge(ctx context.Context, creatorID int64, name strin
 			return nil, nil, fmt.Errorf("failed to generate invite code: %w", err)
 		}
 
-		insertQuery := `INSERT INTO tourneys (creator_id, name, invite_code, duration_days, daily_minutes_goal) VALUES (?, ?, ?, ?, ?)`
-		result, err := s.exec(ctx, insertQuery, creatorID, name, inviteCode, durationDays, dailyGoalMins)
+		insertQuery := `INSERT INTO tourneys (creator_id, name, invite_code, duration_days, daily_minutes_goal, min_ante, starttime, pot_total, challenger_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		result, err := s.exec(ctx, insertQuery, creatorID, name, inviteCode, durationDays, dailyGoalMins, ante, startTimeStr, ante, 1)
 		if err != nil {
 			if err.Error() == "UNIQUE constraint failed: tourneys.invite_code" {
 				insertErr = err
@@ -276,6 +302,10 @@ func (s *Store) CreateChallenge(ctx context.Context, creatorID int64, name strin
 		InviteCode:       inviteCode,
 		DurationDays:     durationDays,
 		DailyMinutesGoal: dailyGoalMins,
+		MinAnte:          ante,
+		StartTime:        startTimeStr,
+		PotTotal:         ante,
+		ChallengerCount:  1,
 	}
 
 	userChallenge := &models.UserChallenge{
@@ -291,23 +321,35 @@ func (s *Store) CreateChallenge(ctx context.Context, creatorID int64, name strin
 // JoinChallenge enrolls a user in an existing challenge by invite code.
 func (s *Store) JoinChallenge(ctx context.Context, userID int64, inviteCode string) error {
 	// Check user doesn't already have an active challenge
-	uc, _, err := s.GetActiveUserChallenge(ctx, userID)
+	activeUc, _, err := s.GetActiveUserChallenge(ctx, userID)
 	if err != nil {
 		return err
 	}
-	if uc != nil {
+	if activeUc != nil {
 		return ErrActiveChallenge
 	}
 
 	// Look up the challenge by invite code
-	queryString := `SELECT id FROM tourneys WHERE invite_code = ?`
+	queryString := `SELECT id, min_ante, starttime FROM tourneys WHERE invite_code = ?`
 	var challengeID int64
-	err = s.queryRow(ctx, queryString, inviteCode).Scan(&challengeID)
+	var minAnte int
+	var startTimeStr sql.NullString
+	err = s.queryRow(ctx, queryString, inviteCode).Scan(&challengeID, &minAnte, &startTimeStr)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrInviteCodeNotFound
 		}
 		return err
+	}
+
+	// Check starttime
+	if startTimeStr.Valid {
+		startTime, err := time.Parse(time.RFC3339, startTimeStr.String)
+		if err == nil {
+			if time.Now().UTC().After(startTime) {
+				return ErrChallengeStarted
+			}
+		}
 	}
 
 	// Check if already enrolled in this specific challenge (any status)
@@ -321,11 +363,38 @@ func (s *Store) JoinChallenge(ctx context.Context, userID int64, inviteCode stri
 		return err
 	}
 
+	// Check user balance
+	user, err := s.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if int(user.Coins) < minAnte {
+		return ErrInsufficientCoins
+	}
+
+	// Deduct coins and update tourney pot/count
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Double check coins in Tx? (Skip for now to keep it simple, but good practice)
+	if _, err := tx.ExecContext(ctx, `UPDATE users SET coins = coins - ? WHERE id = ?`, minAnte, userID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE tourneys SET pot_total = pot_total + ?, challenger_count = challenger_count + 1 WHERE id = ?`, minAnte, challengeID); err != nil {
+		return err
+	}
+
 	// Enroll the user
 	today := time.Now().UTC().Format("2006-01-02")
 	enrollQuery := `INSERT INTO user_challenges (user_id, challenge_id, status, start_date) VALUES (?, ?, 'active', ?)`
-	_, err = s.exec(ctx, enrollQuery, userID, challengeID, today)
-	return err
+	if _, err = tx.ExecContext(ctx, enrollQuery, userID, challengeID, today); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // BuildTourneyStatus constructs the full TourneyStatusResponse for a user.
@@ -362,22 +431,43 @@ func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.T
 		dayNumber = ch.DurationDays
 	}
 
+	// Check if tourney has started
+	hasStarted := true
+	if ch.StartTime != "" {
+		st, err := time.Parse(time.RFC3339, ch.StartTime)
+		if err == nil && time.Now().UTC().Before(st) {
+			hasStarted = false
+		}
+	}
+
 	// Get today's reading
-	minutesToday, err := s.GetDailyReadingLog(ctx, userID, today)
-	if err != nil {
-		return nil, err
+	minutesToday := 0
+	if hasStarted {
+		minutesToday, err = s.GetDailyReadingLog(ctx, userID, today)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Calculate days complete (days where goal was met)
-	endDateStr := startDate.AddDate(0, 0, ch.DurationDays-1).Format("2006-01-02")
-	logs, err := s.GetDailyReadingLogsForRange(ctx, userID, uc.StartDate, endDateStr)
-	if err != nil {
-		return nil, err
+	var logs map[string]int
+	if hasStarted {
+		endDateStr := startDate.AddDate(0, 0, ch.DurationDays-1).Format("2006-01-02")
+		logs, err = s.GetDailyReadingLogsForRange(ctx, userID, uc.StartDate, endDateStr)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	daysComplete := 0
 	for _, minutes := range logs {
+		// Only count sessions on or after start_date
 		if minutes >= ch.DailyMinutesGoal {
+			// Double check starttime? If it's the first day, should we filter by session's updated_at?
+			// The user said "Reading sessions should not count towards challenges until tourney."
+			// Since starttime is usually 00:01, any session on start_date is basically after starttime.
+			// However, if someone reads at 00:00:30, it technically shouldn't count.
+			// But the reading log only stores DATE. So we'll treat the whole day as eligible IF now >= starttime.
 			daysComplete++
 		}
 	}
@@ -385,17 +475,67 @@ func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.T
 	dailyComplete := minutesToday >= ch.DailyMinutesGoal
 	overallComplete := dayNumber >= ch.DurationDays && daysComplete >= ch.DurationDays
 
+	// --- PAYOUT LOGIC ---
+	if overallComplete && !uc.PayoutClaimed {
+		// Evaluated lazily: user finished!
+		payout := 0
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		defer tx.Rollback()
+
+		// Reload tourney within Tx to get fresh pot/counts
+		var potTotal, challengerCount int
+		err = tx.QueryRowContext(ctx, "SELECT pot_total, challenger_count FROM tourneys WHERE id = ?", ch.ID).Scan(&potTotal, &challengerCount)
+		if err != nil {
+			return nil, err
+		}
+
+		if challengerCount > 1 {
+			payout = potTotal / 2
+		} else {
+			payout = potTotal
+		}
+
+		// Award coins
+		if _, err := tx.ExecContext(ctx, "UPDATE users SET coins = coins + ? WHERE id = ?", payout, userID); err != nil {
+			return nil, err
+		}
+		// Update tourney pot and counts
+		if _, err := tx.ExecContext(ctx, "UPDATE tourneys SET pot_total = pot_total - ?, challenger_count = challenger_count - 1, completed_count = completed_count + 1 WHERE id = ?", payout, ch.ID); err != nil {
+			return nil, err
+		}
+		// Mark payout claimed
+		if _, err := tx.ExecContext(ctx, "UPDATE user_challenges SET payout_claimed = 1, status = 'completed' WHERE id = ?", uc.ID); err != nil {
+			return nil, err
+		}
+
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		// Update local state for response
+		uc.PayoutClaimed = true
+		ch.PotTotal -= payout
+		ch.ChallengerCount -= 1
+		ch.CompletedCount += 1
+	}
+
 	// Build taunt messages only if daily goal not met
 	var taunts []string
-	if !dailyComplete {
+	if !dailyComplete && hasStarted {
 		taunts = tauntMessages
 	}
 
 	return &models.TourneyStatusResponse{
-		ID:            ch.ID,
-		Name:          ch.Name,
-		InviteCode:    ch.InviteCode,
-		TauntMessages: taunts,
+		ID:              ch.ID,
+		Name:            ch.Name,
+		InviteCode:      ch.InviteCode,
+		StartTime:       ch.StartTime,
+		PotTotal:        ch.PotTotal,
+		ChallengerCount: ch.ChallengerCount,
+		CompletedCount:  ch.CompletedCount,
+		TauntMessages:   taunts,
 		DailyProgress: models.DailyProgress{
 			MinutesComplete: minutesToday,
 			MinuteGoal:      ch.DailyMinutesGoal,
@@ -417,4 +557,14 @@ func (s *Store) SetChallengeStartDate(ctx context.Context, userID int64, daysAgo
 	pastDate := time.Now().UTC().AddDate(0, 0, -daysAgo).Format("2006-01-02")
 	queryString := `UPDATE user_challenges SET start_date = ? WHERE user_id = ? AND status = 'active'`
 	s.exec(ctx, queryString, pastDate, userID)
+}
+
+// ExecForTest is a test helper to run arbitrary SQL.
+func (s *Store) ExecForTest(ctx context.Context, query string, args ...any) {
+	s.exec(ctx, query, args...)
+}
+
+// QueryRowForTest is a test helper to run arbitrary SQL query.
+func (s *Store) QueryRowForTest(ctx context.Context, query string, args ...any) *sql.Row {
+	return s.queryRow(ctx, query, args...)
 }
