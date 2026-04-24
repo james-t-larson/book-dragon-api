@@ -964,9 +964,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "challenger_count": {
+                    "description": "Total number of participants.",
                     "type": "integer"
                 },
                 "completed_count": {
+                    "description": "Number of participants who have completed the challenge goal.",
                     "type": "integer"
                 },
                 "daily_progress": {
@@ -985,9 +987,11 @@ const docTemplate = `{
                     "$ref": "#/definitions/models.OverallProgress"
                 },
                 "pot_total": {
+                    "description": "The total coins currently in the pot.",
                     "type": "integer"
                 },
                 "starttime": {
+                    "description": "The RFC3339 start time of the tournament.",
                     "type": "string"
                 },
                 "taunt_messages": {

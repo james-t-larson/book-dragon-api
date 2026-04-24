@@ -34,10 +34,10 @@ type TourneyStatusResponse struct {
 	ID              int64           `json:"id"`
 	Name            string          `json:"name"`
 	InviteCode      string          `json:"invite_code"`
-	StartTime       string          `json:"starttime"` // RFC3339 string
-	PotTotal        int             `json:"pot_total"`
-	ChallengerCount int             `json:"challenger_count"`
-	CompletedCount  int             `json:"completed_count"`
+	StartTime       string          `json:"starttime"`       // The RFC3339 start time of the tournament.
+	PotTotal        int             `json:"pot_total"`       // The total coins currently in the pot.
+	ChallengerCount int             `json:"challenger_count"` // Total number of participants.
+	CompletedCount  int             `json:"completed_count"`  // Number of participants who have completed the challenge goal.
 	TauntMessages   []string        `json:"taunt_messages"`
 	DailyProgress   DailyProgress   `json:"daily_progress"`
 	OverallProgress OverallProgress `json:"overall_progress"`
