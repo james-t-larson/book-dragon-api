@@ -68,7 +68,7 @@ func TestCreateTourney(t *testing.T) {
 			Name:            "Summer Reading Challenge",
 			OverallGoalDays: 7,
 			DailyGoalMins:   15,
-			Ante:            50,
+			Ante:            intPtr(50),
 		}
 		bodyBytes, _ := json.Marshal(payload)
 		req := httptest.NewRequest(http.MethodPost, "/tourney", bytes.NewBuffer(bodyBytes))
@@ -99,13 +99,37 @@ func TestCreateTourney(t *testing.T) {
 		}
 	})
 
+	t.Run("TC-1.2 Missing required ante param", func(t *testing.T) {
+		st := setupTestStore(t)
+		u := createTestUser(t, st, "val_user1", "val1@test.com")
+		handler := &handlers.TourneyHandler{Store: st}
+
+		// Payload missing "ante"
+		payload := map[string]interface{}{
+			"name":               "No Ante",
+			"overall_goal_days":  7,
+			"daily_goal_minutes": 15,
+		}
+		bodyBytes, _ := json.Marshal(payload)
+		req := httptest.NewRequest(http.MethodPost, "/tourney", bytes.NewBuffer(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		ctx := context.WithValue(req.Context(), auth.UserContextKey, u.ID)
+		req = req.WithContext(ctx)
+		w := httptest.NewRecorder()
+		handler.CreateTourney(w, req)
+
+		if w.Result().StatusCode != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d. Body: %s", w.Result().StatusCode, w.Body.String())
+		}
+	})
+
 	t.Run("TC-1.3 Ante exceeds user balance", func(t *testing.T) {
 		st := setupTestStore(t)
 		u := createTestUser(t, st, "poor_user", "poor@test.com")
 		setCoins(t, st, u.ID, 50)
 		handler := &handlers.TourneyHandler{Store: st}
 
-		payload := models.CreateChallengeRequest{Name: "Expensive", OverallGoalDays: 7, DailyGoalMins: 15, Ante: 100}
+		payload := models.CreateChallengeRequest{Name: "Expensive", OverallGoalDays: 7, DailyGoalMins: 15, Ante: intPtr(100)}
 		bodyBytes, _ := json.Marshal(payload)
 		req := httptest.NewRequest(http.MethodPost, "/tourney", bytes.NewBuffer(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")

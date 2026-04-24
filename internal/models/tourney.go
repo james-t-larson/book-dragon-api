@@ -5,7 +5,7 @@ type CreateChallengeRequest struct {
 	Name            string `json:"name"`
 	OverallGoalDays int    `json:"overall_goal_days"`
 	DailyGoalMins   int    `json:"daily_goal_minutes"`
-	Ante            int    `json:"ante"`
+	Ante            *int   `json:"ante"`
 }
 
 // JoinChallengeRequest is used for POST /join_tourney to join a challenge by invite code.

@@ -98,12 +98,17 @@ func (h *TourneyHandler) CreateTourney(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Ante < 0 {
-		writeError(w, http.StatusBadRequest, "ante must be a positive integer")
+	if req.Ante == nil {
+		writeError(w, http.StatusBadRequest, "ante is required")
 		return
 	}
 
-	_, _, err := h.Store.CreateChallenge(r.Context(), userID, req.Name, req.OverallGoalDays, req.DailyGoalMins, req.Ante)
+	if *req.Ante < 0 {
+		writeError(w, http.StatusBadRequest, "ante must be a non-negative integer")
+		return
+	}
+
+	_, _, err := h.Store.CreateChallenge(r.Context(), userID, req.Name, req.OverallGoalDays, req.DailyGoalMins, *req.Ante)
 	if err != nil {
 		if err == store.ErrActiveChallenge {
 			writeError(w, http.StatusConflict, "user already has an active challenge")
