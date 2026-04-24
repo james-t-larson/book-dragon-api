@@ -793,6 +793,9 @@ const docTemplate = `{
         "models.CreateChallengeRequest": {
             "type": "object",
             "properties": {
+                "ante": {
+                    "type": "integer"
+                },
                 "daily_goal_minutes": {
                     "type": "integer"
                 },
@@ -960,6 +963,12 @@ const docTemplate = `{
         "models.TourneyStatusResponse": {
             "type": "object",
             "properties": {
+                "challenger_count": {
+                    "type": "integer"
+                },
+                "completed_count": {
+                    "type": "integer"
+                },
                 "daily_progress": {
                     "$ref": "#/definitions/models.DailyProgress"
                 },
@@ -974,6 +983,12 @@ const docTemplate = `{
                 },
                 "overall_progress": {
                     "$ref": "#/definitions/models.OverallProgress"
+                },
+                "pot_total": {
+                    "type": "integer"
+                },
+                "starttime": {
+                    "type": "string"
                 },
                 "taunt_messages": {
                     "type": "array",

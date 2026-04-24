@@ -787,6 +787,9 @@
         "models.CreateChallengeRequest": {
             "type": "object",
             "properties": {
+                "ante": {
+                    "type": "integer"
+                },
                 "daily_goal_minutes": {
                     "type": "integer"
                 },
@@ -954,6 +957,12 @@
         "models.TourneyStatusResponse": {
             "type": "object",
             "properties": {
+                "challenger_count": {
+                    "type": "integer"
+                },
+                "completed_count": {
+                    "type": "integer"
+                },
                 "daily_progress": {
                     "$ref": "#/definitions/models.DailyProgress"
                 },
@@ -968,6 +977,12 @@
                 },
                 "overall_progress": {
                     "$ref": "#/definitions/models.OverallProgress"
+                },
+                "pot_total": {
+                    "type": "integer"
+                },
+                "starttime": {
+                    "type": "string"
                 },
                 "taunt_messages": {
                     "type": "array",
