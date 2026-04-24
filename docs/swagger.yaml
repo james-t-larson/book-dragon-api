@@ -95,12 +95,20 @@ definitions:
         type: integer
       minutes:
         type: integer
+      tourney_id:
+        type: integer
     type: object
   models.FocusTimerResponse:
     properties:
       coins_earned:
         type: integer
       total_coins:
+        type: integer
+      tourney:
+        $ref: '#/definitions/models.TourneyStatusResponse'
+      tourney_completed:
+        type: boolean
+      tourney_winnings:
         type: integer
     type: object
   models.JoinChallengeRequest:

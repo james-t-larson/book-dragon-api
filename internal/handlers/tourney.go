@@ -48,7 +48,7 @@ func (h *TourneyHandler) GetTourney(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, err := h.Store.BuildTourneyStatus(r.Context(), userID)
+	status, _, err := h.Store.BuildTourneyStatus(r.Context(), userID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to get tourney status")
 		return
@@ -128,7 +128,7 @@ func (h *TourneyHandler) CreateTourney(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build the full status response to return to frontend
-	status, err := h.Store.BuildTourneyStatus(r.Context(), userID)
+	status, _, err := h.Store.BuildTourneyStatus(r.Context(), userID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to build tourney status")
 		return

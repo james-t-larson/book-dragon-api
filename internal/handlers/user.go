@@ -77,7 +77,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Inject tourney status (will be nil for new users)
-	tourneyStatus, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
+	tourneyStatus, _, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
 	user.TourneyStatus = tourneyStatus
 
 	writeJSON(w, http.StatusCreated, models.AuthResponse{
@@ -126,7 +126,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Inject tourney status via lazy evaluation
-	tourneyStatus, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
+	tourneyStatus, _, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
 	user.TourneyStatus = tourneyStatus
 
 	writeJSON(w, http.StatusOK, models.AuthResponse{
@@ -158,7 +158,7 @@ func (h *UserHandler) Me(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Inject tourney status via lazy evaluation
-	tourneyStatus, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
+	tourneyStatus, _, _ := h.Store.BuildTourneyStatus(r.Context(), user.ID)
 	user.TourneyStatus = tourneyStatus
 
 	writeJSON(w, http.StatusOK, user)
@@ -258,9 +258,29 @@ func (h *UserHandler) FocusTimerComplete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Trigger tourney win/payout check immediately
+	// If TourneyID is provided in request, it could be used to filter. 
+	// For now, the system assumes one active challenge, but we'll pass the ID if present.
+	tourneyStatus, tourneyWinnings, err := h.Store.BuildTourneyStatus(r.Context(), userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update tournament status")
+		return
+	}
+
+	// If winnings were rewarded, refresh total coins
+	if tourneyWinnings > 0 {
+		user, err := h.Store.GetUserByID(r.Context(), userID)
+		if err == nil {
+			totalCoins = user.Coins
+		}
+	}
+
 	writeJSON(w, http.StatusOK, models.FocusTimerResponse{
-		CoinsEarned: coinsEarned,
-		TotalCoins:  totalCoins,
+		CoinsEarned:      coinsEarned,
+		TourneyWinnings:  tourneyWinnings,
+		TourneyCompleted: tourneyStatus != nil && tourneyStatus.OverallProgress.IsComplete,
+		TotalCoins:       totalCoins,
+		TourneyStatus:    tourneyStatus,
 	})
 }
 

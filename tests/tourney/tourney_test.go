@@ -167,7 +167,7 @@ func TestJoinTourney(t *testing.T) {
 			t.Errorf("expected 50 coins remaining for joiner, got %d", updatedJoiner.Coins)
 		}
 
-		status, _ := st.BuildTourneyStatus(context.Background(), creator.ID)
+		status, _, _ := st.BuildTourneyStatus(context.Background(), creator.ID)
 		if status.PotTotal != 100 {
 			t.Errorf("expected pot 100, got %d", status.PotTotal)
 		}
@@ -201,7 +201,7 @@ func TestProgressTracking(t *testing.T) {
 		ch, _, _ := st.CreateChallenge(context.Background(), u.ID, "Time Test", 3, 5, 10)
 		st.UpsertDailyReadingLog(context.Background(), u.ID, todayUTC(), 10)
 
-		status, _ := st.BuildTourneyStatus(context.Background(), u.ID)
+		status, _, _ := st.BuildTourneyStatus(context.Background(), u.ID)
 		if status.DailyProgress.MinutesComplete != 0 {
 			t.Errorf("expected 0 progress before starttime, got %d", status.DailyProgress.MinutesComplete)
 		}
@@ -209,7 +209,7 @@ func TestProgressTracking(t *testing.T) {
 		pastStart := time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339)
 		st.ExecForTest(context.Background(), "UPDATE tourneys SET starttime = ? WHERE id = ?", pastStart, ch.ID)
 
-		status2, _ := st.BuildTourneyStatus(context.Background(), u.ID)
+		status2, _, _ := st.BuildTourneyStatus(context.Background(), u.ID)
 		if status2.DailyProgress.MinutesComplete != 10 {
 			t.Errorf("expected 10 progress after starttime, got %d", status2.DailyProgress.MinutesComplete)
 		}
@@ -230,7 +230,7 @@ func TestProgressTracking(t *testing.T) {
 
 		st.UpsertDailyReadingLog(context.Background(), u.ID, todayUTC(), 5)
 
-		status, err := st.BuildTourneyStatus(context.Background(), u.ID)
+		status, _, err := st.BuildTourneyStatus(context.Background(), u.ID)
 		if err != nil {
 			t.Fatalf("BuildTourneyStatus failed: %v", err)
 		}
@@ -269,7 +269,7 @@ func TestPayoutLogic(t *testing.T) {
 
 		// U1 finishes: Gets 100 (50% of 200)
 		st.UpsertDailyReadingLog(context.Background(), users[0].ID, todayUTC(), 5)
-		status, err := st.BuildTourneyStatus(context.Background(), users[0].ID)
+		status, _, err := st.BuildTourneyStatus(context.Background(), users[0].ID)
 		if err != nil || status == nil {
 			t.Fatalf("U1 failed: %v, %v", status, err)
 		}
@@ -280,7 +280,7 @@ func TestPayoutLogic(t *testing.T) {
 
 		// U2 finishes: Gets 50 (50% of 100)
 		st.UpsertDailyReadingLog(context.Background(), users[1].ID, todayUTC(), 5)
-		status, err = st.BuildTourneyStatus(context.Background(), users[1].ID)
+		status, _, err = st.BuildTourneyStatus(context.Background(), users[1].ID)
 		if err != nil || status == nil {
 			t.Fatalf("U2 failed: %v, %v", status, err)
 		}
@@ -291,7 +291,7 @@ func TestPayoutLogic(t *testing.T) {
 
 		// U3 finishes: Gets 25 (50% of 50)
 		st.UpsertDailyReadingLog(context.Background(), users[2].ID, todayUTC(), 5)
-		status, err = st.BuildTourneyStatus(context.Background(), users[2].ID)
+		status, _, err = st.BuildTourneyStatus(context.Background(), users[2].ID)
 		if err != nil || status == nil {
 			t.Fatalf("U3 failed: %v, %v", status, err)
 		}
@@ -302,7 +302,7 @@ func TestPayoutLogic(t *testing.T) {
 
 		// U4 finishes: Gets 25 (100% of 25)
 		st.UpsertDailyReadingLog(context.Background(), users[3].ID, todayUTC(), 5)
-		status, err = st.BuildTourneyStatus(context.Background(), users[3].ID)
+		status, _, err = st.BuildTourneyStatus(context.Background(), users[3].ID)
 		if err != nil || status == nil {
 			t.Fatalf("U4 failed: %v, %v", status, err)
 		}

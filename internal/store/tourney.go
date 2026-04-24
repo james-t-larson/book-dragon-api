@@ -399,27 +399,28 @@ func (s *Store) JoinChallenge(ctx context.Context, userID int64, inviteCode stri
 
 // BuildTourneyStatus constructs the full TourneyStatusResponse for a user.
 // It performs lazy evaluation: checking expirations, calculating daily and overall progress.
-// Returns nil if no active challenge.
-func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.TourneyStatusResponse, error) {
+// Returns the status and any payout awarded during this call.
+// Returns nil, 0, nil if no active challenge.
+func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.TourneyStatusResponse, int64, error) {
 	// First, expire any completed challenges
 	_, err := s.CompleteExpiredChallenges(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Get current active challenge
 	uc, ch, err := s.GetActiveUserChallenge(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if uc == nil {
-		return nil, nil
+		return nil, 0, nil
 	}
 
 	// Parse start date
 	startDate, err := time.Parse("2006-01-02", uc.StartDate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse start_date: %w", err)
+		return nil, 0, fmt.Errorf("failed to parse start_date: %w", err)
 	}
 
 	now := time.Now().UTC().Truncate(24 * time.Hour)
@@ -445,7 +446,7 @@ func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.T
 	if hasStarted {
 		minutesToday, err = s.GetDailyReadingLog(ctx, userID, today)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
@@ -455,7 +456,7 @@ func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.T
 		endDateStr := startDate.AddDate(0, 0, ch.DurationDays-1).Format("2006-01-02")
 		logs, err = s.GetDailyReadingLogsForRange(ctx, userID, uc.StartDate, endDateStr)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
@@ -476,12 +477,13 @@ func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.T
 	overallComplete := dayNumber >= ch.DurationDays && daysComplete >= ch.DurationDays
 
 	// --- PAYOUT LOGIC ---
+	var tourneyPayout int64
 	if overallComplete && !uc.PayoutClaimed {
 		// Evaluated lazily: user finished!
 		payout := 0
 		tx, err := s.db.BeginTx(ctx, nil)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		defer tx.Rollback()
 
@@ -489,7 +491,7 @@ func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.T
 		var potTotal, challengerCount int
 		err = tx.QueryRowContext(ctx, "SELECT pot_total, challenger_count FROM tourneys WHERE id = ?", ch.ID).Scan(&potTotal, &challengerCount)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		if challengerCount > 1 {
@@ -500,21 +502,22 @@ func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.T
 
 		// Award coins
 		if _, err := tx.ExecContext(ctx, "UPDATE users SET coins = coins + ? WHERE id = ?", payout, userID); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		// Update tourney pot and counts
 		if _, err := tx.ExecContext(ctx, "UPDATE tourneys SET pot_total = pot_total - ?, challenger_count = challenger_count - 1, completed_count = completed_count + 1 WHERE id = ?", payout, ch.ID); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		// Mark payout claimed
 		if _, err := tx.ExecContext(ctx, "UPDATE user_challenges SET payout_claimed = 1, status = 'completed' WHERE id = ?", uc.ID); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		if err := tx.Commit(); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		// Update local state for response
+		tourneyPayout = int64(payout)
 		uc.PayoutClaimed = true
 		ch.PotTotal -= payout
 		ch.ChallengerCount -= 1
@@ -547,7 +550,7 @@ func (s *Store) BuildTourneyStatus(ctx context.Context, userID int64) (*models.T
 			DaysGoal:     ch.DurationDays,
 			IsComplete:   overallComplete,
 		},
-	}, nil
+	}, tourneyPayout, nil
 }
 
 // SetChallengeStartDate is a test helper that backdates a user's active challenge

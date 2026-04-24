@@ -53,9 +53,13 @@ type FocusTimerRequest struct {
 	Minutes     int   `json:"minutes"`
 	BookID      int64 `json:"book_id"`
 	CurrentPage *int  `json:"current_page"`
+	TourneyID   int64 `json:"tourney_id,omitempty"`
 }
 
 type FocusTimerResponse struct {
-	CoinsEarned int64 `json:"coins_earned"`
-	TotalCoins  int64 `json:"total_coins"`
+	CoinsEarned      int64                  `json:"coins_earned"`
+	TourneyWinnings  int64                  `json:"tourney_winnings,omitempty"`
+	TourneyCompleted bool                   `json:"tourney_completed"`
+	TotalCoins       int64                  `json:"total_coins"`
+	TourneyStatus    *TourneyStatusResponse `json:"tourney,omitempty"`
 }

@@ -865,6 +865,9 @@
                 },
                 "minutes": {
                     "type": "integer"
+                },
+                "tourney_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -875,6 +878,15 @@
                     "type": "integer"
                 },
                 "total_coins": {
+                    "type": "integer"
+                },
+                "tourney": {
+                    "$ref": "#/definitions/models.TourneyStatusResponse"
+                },
+                "tourney_completed": {
+                    "type": "boolean"
+                },
+                "tourney_winnings": {
                     "type": "integer"
                 }
             }
