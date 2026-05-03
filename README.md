@@ -27,6 +27,10 @@ git config core.hooksPath .githooks
 
 The server will start on `http://localhost:8080` by default. It will also automatically create a `bookdragon.db` SQLite database file in your current directory if it doesn't already exist.
 
+### Running with Docker
+
+Alternatively, you can use Docker to build and run the API. For complete setup steps and usage instructions, please refer to the [Docker Build & Deployment Guide](file:///Users/jameslarson/Projects/book-dragon-api/docs/DOCKER.md).
+
 ## Testing Your First Endpoint
 
 Once the server is running, you can test the **Register** endpoint. Open a new terminal window and use `curl` to create a new user account:

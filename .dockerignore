@@ -1,0 +1,12 @@
+# Exclude Git files
+.git
+.githooks
+
+# Exclude local build artifacts
+api
+book-dragon-api
+
+# Exclude databases and temporary local files
+*.db
+data/
+login.json
